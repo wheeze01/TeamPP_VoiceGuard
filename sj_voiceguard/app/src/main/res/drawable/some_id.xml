@@ -1,0 +1,39 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="360dp"
+    android:height="800dp"
+    android:viewportWidth="360"
+    android:viewportHeight="800">
+
+    <group>
+        <!-- 클립 경로 정의 -->
+        <clip-path android:pathData="M0 0H360V800H0V0Z"/>
+
+        <!-- 그룹 내 트랜스폼(translate, scale, rotate) 적용 -->
+        <group
+            android:translateX="-0.611"
+            android:translateY="1"
+            android:pivotX="180"
+            android:pivotY="400"
+            android:scaleX="2"
+            android:scaleY="4.444"
+            android:rotation="-90">
+
+            <!-- 그라디언트 색상을 가진 경로 정의 -->
+            <path android:pathData="M0 0V800H360V0">
+                <aapt:attr name="android:fillColor">
+                    <gradient
+                        android:type="linear"
+                        android:startX="90"
+                        android:startY="400"
+                        android:endX="270"
+                        android:endY="400">
+                        <item android:color="#385CDE" android:offset="0.196"/>
+                        <item android:color="#A0D5FA" android:offset="0.603"/>
+                        <item android:color="#FFFFFF" android:offset="1"/>
+                    </gradient>
+                </aapt:attr>
+            </path>
+        </group>
+    </group>
+</vector>

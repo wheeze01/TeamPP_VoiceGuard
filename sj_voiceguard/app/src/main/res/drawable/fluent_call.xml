@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="54.33dp"
+    android:height="54.33dp"
+    android:viewportWidth="54.33"
+    android:viewportHeight="54.33">
+
+    <!-- 둥근 외곽선 -->
+    <path
+        android:pathData="M27.1665 0.5C41.8948 0.5 53.8337 12.439 53.8337 27.1665C53.8337 41.894 41.8948 53.8329 27.1673 53.8329C12.439 53.8329 0.5 41.894 0.5 27.1665C0.5 12.439 12.439 0.5 27.1665 0.5Z"
+        android:strokeWidth="1"
+        android:strokeColor="#595959"
+        android:fillColor="#FFFFFF" />
+</vector>

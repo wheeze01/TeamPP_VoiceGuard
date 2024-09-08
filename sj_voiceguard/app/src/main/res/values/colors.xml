@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#757575</color> <!-- 비활성화 버튼 색상 -->
+    <color name="colorEnabled">#FF6F00</color> <!-- 활성화 버튼 색상 -->
+    <color name="colorDisabled">#D3D3D3</color> <!-- 비활성화 버튼 배경 -->
+    <color name="light_blue">#ADD8E6</color> <!-- 화면 배경색 -->
+    <color name="green">#4CAF50</color> <!-- 초록색 전화 버튼 -->
+    <color name="red">#F44336</color> <!-- 빨간색 전화 끊기 버튼 -->
+    <color name="primary_dark_color">#002171</color>
 </resources>
