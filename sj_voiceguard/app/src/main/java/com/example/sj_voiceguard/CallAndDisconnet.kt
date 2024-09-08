@@ -3,7 +3,9 @@ import android.content.Intent
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Bundle
+import android.os.Handler
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.sj_voiceguard.MainActivity
 import com.example.sj_voiceguard.R
@@ -11,7 +13,7 @@ import com.example.sj_voiceguard.R
 class CallAndDisconnect : AppCompatActivity() {
 
     private var ringtone: Ringtone? = null
-
+    private var backPressedOnce = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.callmain)
@@ -67,5 +69,17 @@ class CallAndDisconnect : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopRingtone()
+    }
+    override fun onBackPressed() {
+        if (backPressedOnce) {
+            super.onBackPressed()
+            finishAffinity() // 모든 액티비티 종료
+        } else {
+            backPressedOnce = true
+            // 사용자에게 뒤로가기 버튼을 다시 눌러서 앱을 종료하도록 안내
+            Toast.makeText(this, "뒤로가기 버튼을 한 번 더 누르면 앱이 종료됩니다.", Toast.LENGTH_SHORT).show()
+            // 2초 후에 backPressedOnce 플래그를 false로 리셋
+            Handler().postDelayed({ backPressedOnce = false }, 2000)
+        }
     }
 }

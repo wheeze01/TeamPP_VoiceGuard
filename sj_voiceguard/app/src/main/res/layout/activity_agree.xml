@@ -4,18 +4,20 @@
     android:layout_height="match_parent">
 
     <!-- 화면에 맞춘 배경 이미지 설정 -->
+
+
+    <!-- 로고 이미지 -->
     <ImageView
         android:id="@+id/background_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:src="@drawable/some_id1" /> <!-- 벡터 이미지 또는 PNG/JPG 이미지 사용 -->
+        android:src="@drawable/some_id1" />
 
-    <!-- 로고 이미지 -->
     <ImageView
         android:id="@+id/logo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="230dp"
+        android:layout_height="330dp"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="200dp"
         android:src="@drawable/voice_guard_logono2" />
@@ -23,13 +25,13 @@
     <!-- "테스트 하기" 버튼 -->
     <Button
         android:id="@+id/test_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="300dp"
+        android:layout_height="52dp"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/logo"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="60dp"
         android:text="테스트 하기"
         android:textSize="18sp"
-        android:backgroundTint="@color/primary_dark_color"
+        android:backgroundTint="#002171"
         android:textColor="@android:color/white" />
 </RelativeLayout>

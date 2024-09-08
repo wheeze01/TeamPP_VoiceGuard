@@ -11,6 +11,7 @@
         <item name="android:windowBackground">@drawable/your_loading_image</item> <!-- 로딩 이미지 설정 -->
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
+        <item name="colorButtonNormal">@null</item>
     </style>
 
 </resources>
