@@ -1,0 +1,22 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 버튼이 눌렸을 때 색상 변화 -->
+    <item android:state_pressed="true">
+        <shape android:shape="oval">
+            <solid android:color="#388E3C"/> <!-- 눌렀을 때의 색상 (짙은 초록색) -->
+            <corners android:radius="100dp" />
+            <stroke android:width="3dp" android:color="#2E7D32"/> <!-- 테두리 색상 -->
+        </shape>
+    </item>
+    <!-- 기본 상태일 때의 버튼 디자인 -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:startColor="#4CAF50"
+                android:endColor="#81C784"
+                android:angle="90" /> <!-- 그라디언트 효과 (초록색) -->
+            <corners android:radius="100dp" />
+            <stroke android:width="3dp" android:color="#388E3C"/> <!-- 기본 테두리 색상 -->
+            <padding android:left="10dp" android:top="10dp" android:right="10dp" android:bottom="10dp" />
+        </shape>
+    </item>
+</selector>
