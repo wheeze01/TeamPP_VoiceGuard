@@ -1,37 +1,65 @@
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- 화면에 맞춘 배경 이미지 설정 -->
-
+    <!-- 배경 이미지 설정 -->
+    <ImageView
+        android:id="@+id/background_image"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/some_id1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- 로고 이미지 -->
     <ImageView
-        android:id="@+id/background_image"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/some_id1" />
-
-    <ImageView
         android:id="@+id/logo"
-        android:layout_width="230dp"
-        android:layout_height="330dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="200dp"
-        android:src="@drawable/voice_guard_logono2" />
+        android:layout_marginTop="16dp"
+        android:src="@drawable/voice_guard_logono2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/test_button"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.4"
+        app:layout_constraintDimensionRatio="3:4" />
 
     <!-- "테스트 하기" 버튼 -->
     <Button
         android:id="@+id/test_button"
-        android:layout_width="300dp"
+        android:layout_width="0dp"
         android:layout_height="52dp"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/logo"
-        android:layout_marginTop="60dp"
-        android:text="테스트 하기"
+        android:text="보이스 가드 테스트"
         android:textSize="18sp"
         android:backgroundTint="#002171"
-        android:textColor="@android:color/white" />
-</RelativeLayout>
+        android:textColor="@android:color/white"
+        app:layout_constraintTop_toBottomOf="@id/logo"
+        app:layout_constraintBottom_toTopOf="@+id/guardian_test_button"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginHorizontal="32dp" />
+
+    <!-- 새로 추가된 보호자 전화번호 테스트 버튼 -->
+    <Button
+        android:id="@+id/guardian_test_button"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:text="보호자 전화번호 추가"
+        android:textSize="18sp"
+        android:backgroundTint="#F1101000"
+        android:textColor="@android:color/white"
+        app:layout_constraintTop_toBottomOf="@id/test_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="32dp"
+        android:layout_marginHorizontal="32dp" />
+</androidx.constraintlayout.widget.ConstraintLayout>

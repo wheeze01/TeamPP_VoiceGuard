@@ -20,5 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "sj_voiceguard"
-include(":app")
- 
+include(":app",":voiceguard_sj")
