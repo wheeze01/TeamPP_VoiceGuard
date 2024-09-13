@@ -50,4 +50,6 @@ dependencies {
     implementation ("androidx.constraintlayout:constraintlayout:2.1.3")
     implementation ("androidx.appcompat:appcompat:1.4.0")
     implementation ("com.google.android.material:material:1.5.0")
+    implementation ("com.squareup.okhttp3:okhttp:4.9.1")  // OkHttp 라이브러리 추가
+    implementation ("org.json:json:20210307")  // JSON 파싱 라이브러리 추가
 }

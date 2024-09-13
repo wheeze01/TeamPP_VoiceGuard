@@ -7,6 +7,11 @@ import android.telephony.SmsManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.widget.Toast
 
 class GuardiansActivity : AppCompatActivity() {
 
@@ -15,10 +20,19 @@ class GuardiansActivity : AppCompatActivity() {
     private lateinit var guardianListAdapter: ArrayAdapter<String>
     private val guardianList = mutableListOf<String>()
     private val maxGuardians = 3
+    private val SMS_PERMISSION_CODE = 1
+    private var isSmsPermissionGranted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_guardians)
+
+        // 권한 확인 및 요청
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.SEND_SMS), SMS_PERMISSION_CODE)
+        } else {
+            isSmsPermissionGranted = true
+        }
 
         // SharedPreferences 초기화
         sharedPrefs = getSharedPreferences("GuardiansPrefs", Context.MODE_PRIVATE)
@@ -52,7 +66,25 @@ class GuardiansActivity : AppCompatActivity() {
 
         // 보호자 기능 테스트 버튼 클릭 시
         testGuardianButton.setOnClickListener {
-            sendDangerMessageToGuardians()
+            if (isSmsPermissionGranted) {
+                sendDangerMessageToGuardians()
+            } else {
+                Toast.makeText(this, "SMS 전송 권한이 없습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // 권한 요청 결과 처리
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == SMS_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                isSmsPermissionGranted = true
+                Toast.makeText(this, "SMS 권한이 허용되었습니다.", Toast.LENGTH_SHORT).show()
+            } else {
+                isSmsPermissionGranted = false
+                Toast.makeText(this, "SMS 권한이 거부되었습니다.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -68,7 +100,7 @@ class GuardiansActivity : AppCompatActivity() {
         for (guardianInfo in savedGuardians) {
             val phone = guardianInfo.split(":")[1].trim() // 전화번호만 추출
             try {
-                smsManager.sendTextMessage(phone, null, "위험", null, null)
+                smsManager.sendTextMessage(phone, null, "[VoiceGuard 발신] 보호자 경고 기능 테스트 문제입니다.", null, null)
                 Toast.makeText(this, "$phone 에 메시지를 보냈습니다.", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "$phone 에 메시지를 보내지 못했습니다.", Toast.LENGTH_SHORT).show()
