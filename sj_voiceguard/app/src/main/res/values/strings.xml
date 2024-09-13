@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">sj_voiceguard</string>
+    <string name="record_button_description">녹음</string>
     <string name="terms_required">(필수) <font color='#000000'>[개인정보 수집 및 이용 동의]</font></string>
     <string name="terms_details">
         [VOICE GUARD]\n\n(이하 "본 애플리케이션")은 보이스피싱 예방을 위해 통화내역을 실시간으로 분석하는 서비스를 제공합니다.

@@ -34,8 +34,9 @@ class CallAndDisconnect : AppCompatActivity() {
         // 통화 받기 버튼 클릭 시 다음 화면으로 이동
         answerCallButton.setOnClickListener {
             stopRingtone()
-            // 다음 화면으로 이동
+            // 다음 화면으로 이동하면서 녹음 시작 플래그 전달
             val intent = Intent(this, MainActivity::class.java)
+            intent.putExtra("START_RECORDING", true)
             startActivity(intent)
         }
 
