@@ -1,5 +1,6 @@
-<RelativeLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -9,24 +10,31 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:src="@drawable/some_id" /> <!-- 원하는 백그라운드 이미지 -->
+        android:src="@drawable/some_id"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- 전체 콘텐츠를 감싸는 LinearLayout -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/buttons_container"
+        android:layout_marginBottom="16dp"> <!-- 상단과 하단 간격 조정 -->
 
         <!-- 로고 이미지 -->
-
-        <!-- 타이틀 텍스트 -->
         <ImageView
             android:id="@+id/logo"
             android:layout_width="130dp"
             android:layout_height="130dp"
             android:src="@drawable/voice_guard_logono2" />
 
+        <!-- 타이틀 텍스트 -->
         <TextView
             android:id="@+id/title"
             android:layout_width="wrap_content"
@@ -36,45 +44,92 @@
             android:textSize="24sp"
             android:textStyle="bold" />
 
-        <!-- 안내 텍스트 -->
-
-        <!-- 통화 및 통화 종료 버튼이 들어가는 LinearLayout -->
-        <TextView
-            android:id="@+id/guide_text"
-            android:layout_width="wrap_content"
-            android:layout_height="186dp"
-            android:layout_margin="16dp"
-            android:background="@drawable/rounded_border"
-            android:gravity="center" />
-
+        <!-- 안내 텍스트 영역 -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="140dp"
-            android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/rounded_border"
+            android:padding="16dp"
+            android:layout_margin="16dp">
 
-            <!-- 통화 받기 버튼 -->
-            <ImageButton
-                android:id="@+id/answer_call"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="통화 받기"
-                android:scaleType="fitCenter"
-                android:src="@drawable/call_button" />
+            <!-- 경고 아이콘과 텍스트 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <!-- 통화 종료 버튼 -->
-            <ImageButton
-                android:id="@+id/reject_call"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
-                android:layout_marginStart="200dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="통화 종료"
-                android:scaleType="fitCenter"
-                android:src="@drawable/end_call_button" />
+                <!-- 경고 아이콘 -->
+                <ImageView
+                    android:id="@+id/warning_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/warning_icon" />
 
+                <!-- 안내 제목 텍스트 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="안내"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#000000" />
+            </LinearLayout>
+
+            <!-- 본문 텍스트 -->
+            <TextView
+                android:id="@+id/guide_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="통화버튼을 누르시면 녹음이 시작됩니다.\n녹음된 목소리를 실시간으로 분석해 보이스피싱 위험도를 보여줍니다.\n\n통화 거절 버튼을 누르시면 이전 화면으로 돌아갑니다."
+                android:textSize="14sp"
+                android:textColor="#000000"
+                android:layout_marginTop="8dp" />
         </LinearLayout>
     </LinearLayout>
-</RelativeLayout>
+
+    <!-- 통화 및 통화 종료 버튼이 들어가는 ConstraintLayout -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/buttons_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="17dp"
+        android:layout_marginTop="16dp"
+        android:padding="2dp"> <!-- 상단 마진 추가로 버튼을 위로 올림 -->
+
+    <!-- 통화 받기 버튼 -->
+    <ImageButton
+        android:id="@+id/answer_call"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/button_answer"
+        android:foreground="@drawable/ripple_effect"
+        android:scaleType="fitCenter"
+        android:src="@drawable/vector_3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/reject_call"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginEnd="32dp" />
+
+    <!-- 통화 종료 버튼 -->
+    <ImageButton
+        android:id="@+id/reject_call"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/button_reject"
+        android:foreground="@drawable/ripple_effect"
+        android:scaleType="fitCenter"
+        android:src="@drawable/vector_2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/answer_call"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
