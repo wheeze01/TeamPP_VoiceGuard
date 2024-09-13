@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var speechResultText: TextView
 
     // AI 모델 관련 설정 (API 키와 모델 초기화)
-    private val apiKey = "AIzaSyAkQDgYUawGUISZYsz0Kj8KMBwgfi8gO5c"
+    private val apiKey = "apikey"
     private val model = GenerativeModel(
         modelName = "gemini-pro",
         apiKey = apiKey,
