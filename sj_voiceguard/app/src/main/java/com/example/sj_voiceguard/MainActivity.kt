@@ -1,13 +1,22 @@
 package com.example.sj_voiceguard
 
+import android.media.RingtoneManager
+import android.os.Build
+import android.os.Vibrator
+import android.os.VibrationEffect
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.Ringtone
 import android.os.Bundle
+import android.os.VibratorManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.widget.Button
+import android.view.View
+import android.widget.ImageButton
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -21,13 +30,17 @@ import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
+
+    // 음성 인식 관련 변수
     private lateinit var speechRecognizer: SpeechRecognizer
     private var isListening = false
 
-    private lateinit var recordButton: Button
+    // UI 요소
+    private lateinit var recordButton: ImageButton
     private lateinit var speechResultText: TextView
 
-    private val apiKey = "api_key"
+    // AI 모델 관련 설정 (API 키와 모델 초기화)
+    private val apiKey = "AIzaSyAkQDgYUawGUISZYsz0Kj8KMBwgfi8gO5c"
     private val model = GenerativeModel(
         modelName = "gemini-pro",
         apiKey = apiKey,
@@ -39,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         }
     )
 
+    // 코루틴 관련 변수
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var analysisJob: Job? = null
     private var alertDialog: AlertDialog? = null
@@ -54,13 +68,25 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        // 버튼과 텍스트 뷰 초기화
         recordButton = findViewById(R.id.recordButton)
         speechResultText = findViewById(R.id.speechResultText)
 
+        // SpeechRecognizer 초기화
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
 
+        // 녹음 버튼 클릭 시 음성 인식 시작/중지 처리
         recordButton.setOnClickListener {
-            toggleListening()
+            if (isListening) {
+                stopListening()
+            } else {
+                startListening()
+            }
+        }
+
+        // 인텐트로부터 녹음 시작 플래그 확인
+        if (intent.getBooleanExtra("START_RECORDING", false)) {
+            startListening()
         }
     }
 
@@ -72,15 +98,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 음성 인식 시작 메서드
     private fun startListening() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 1)
         } else {
             isListening = true
             speechResultText.text = "" // 녹음 시작 시 결과 초기화
-            recordButton.text = "중지"
+            recordButton.setImageResource(R.drawable.call_out) // 통화 중지 이미지로 변경
+
+            // 음성 인식 인텐트 설정 (한국어로 설정)
             val recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                )
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR") // 한국어 설정
             }
@@ -92,14 +128,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 음성 인식 중지 메서드
     private fun stopListening() {
         isListening = false
-        recordButton.text = "시작"
-        speechRecognizer.stopListening()
+        recordButton.setImageResource(R.drawable.call_out)
+        speechRecognizer.stopListening() // 음성 인식 중지
+        speechRecognizer.cancel() // 음성 인식 취소 추가
         analysisJob?.cancel() // 실시간 분석 중지
         alertDialog?.dismiss() // 열려있는 AlertDialog 닫기
+
+        // AgreeAct로 이동
+        val intent = Intent(this, AgreeAct::class.java)
+        startActivity(intent)
+        finish() // 현재 액티비티 종료
     }
 
+    // 음성 인식 리스너 생성 메서드
     private fun createRecognitionListener(): RecognitionListener {
         return object : RecognitionListener {
             override fun onResults(results: Bundle?) {
@@ -107,6 +151,7 @@ class MainActivity : AppCompatActivity() {
                 matches?.get(0)?.let { result ->
                     handleSpeechResult(result)
                 }
+                // 결과 처리 후 다시 리스닝 시작
                 if (isListening) {
                     speechRecognizer.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH))
                 }
@@ -119,7 +164,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // 다른 RecognitionListener 메서드들...
             override fun onReadyForSpeech(params: Bundle?) {}
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
@@ -130,13 +174,28 @@ class MainActivity : AppCompatActivity() {
                     speechRecognizer.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH))
                 }
             }
+
             override fun onEvent(eventType: Int, params: Bundle?) {}
         }
     }
 
+    private var accumulatedText = "" // 누적된 텍스트
+    private var lastRecognizedText = ""
+
     private fun handleSpeechResult(result: String) {
         runOnUiThread {
-            speechResultText.text = result
+            // 새로 인식된 텍스트가 이전 텍스트와 다를 경우에만 추가
+            if (result != lastRecognizedText) {
+                accumulatedText += if (accumulatedText.isEmpty()) result else " $result"
+                speechResultText.text = accumulatedText
+                lastRecognizedText = result
+
+                // 스크롤을 항상 맨 아래로 이동
+                val scrollView: ScrollView = findViewById(R.id.scrollView)
+                scrollView.post {
+                    scrollView.fullScroll(View.FOCUS_DOWN)
+                }
+            }
         }
     }
 
@@ -144,9 +203,10 @@ class MainActivity : AppCompatActivity() {
         analysisJob = scope.launch {
             while (isActive) {
                 delay(10000) // 10초마다 분석 수행
-                val currentText = speechResultText.text.toString()
-                if (currentText.isNotEmpty()) {
-                    val analysis = analyzeText(currentText)
+                if (accumulatedText.isNotEmpty()) {
+                    val textToAnalyze = accumulatedText // 현재 누적된 텍스트를 복사
+                    val analysis = analyzeText(textToAnalyze)
+
                     withContext(Dispatchers.Main) {
                         showAnalysisResult(analysis)
                     }
@@ -155,25 +215,71 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private lateinit var ringtone: Ringtone // 클래스 수준에서 선언
+
     private fun showAnalysisResult(analysis: String) {
         alertDialog?.dismiss() // 이전 AlertDialog가 있다면 닫기
 
-        alertDialog = AlertDialog.Builder(this)
-            .setTitle("보이스피싱 분석 결과")
-            .setMessage(analysis)
-            .setPositiveButton("확인") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setNegativeButton("통화 끊기") { _, _ ->
-                stopListening()
-            }
-            .setCancelable(false)
-            .create()
+        val analysisLines = analysis.split("\n")
+        val score = analysisLines[0].toIntOrNull() ?: 0
 
-        alertDialog?.show()
+        // 점수를 제외한 나머지 분석 결과로 analysis 업데이트
+        val analysisWithoutScore = analysisLines.drop(1).joinToString("\n")
+
+        // API 레벨에 따라 진동 처리
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        // 보이스피싱 경고 점수가 40점 이상일 경우 진동 및 알림음 재생
+        if (score >= 40) {
+            // 경고창, 진동 및 소리 알림
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val vibrationEffect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
+                vibrator.vibrate(vibrationEffect)
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(500)
+            }
+
+            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ringtone = RingtoneManager.getRingtone(applicationContext, alarmSound)
+            ringtone.play()
+
+            // 상단에 경고창처럼 알림 표시
+            alertDialog = AlertDialog.Builder(this)
+                .setTitle("⚠️주의")
+                .setMessage("위험 점수: $score\n위험 내용: $analysisWithoutScore")
+                .setPositiveButton("확인") { dialog, _ ->
+                    ringtone.stop()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("통화 끊기") { _, _ ->
+                    ringtone.stop()
+                    stopListening()
+                }
+                .setCancelable(false)
+                .create()
+
+            alertDialog?.show()
+        }
     }
-
     private suspend fun analyzeText(text: String): String {
+        val newModel = GenerativeModel(
+            modelName = "gemini-pro",
+            apiKey = apiKey,
+            generationConfig = generationConfig {
+                temperature = 0.9f
+                topK = 1
+                topP = 1f
+                maxOutputTokens = 2048
+            }
+        )
+
         val prompt = """
         두 사람 간의 전화 통화 스크립트가 주어질거야. 이 통화 스크립트를 분석해서 이 대화가 보이스 피싱 대화일 가능성을 0에서 100사이의 정수로 대답해줘.
 
@@ -215,7 +321,7 @@ class MainActivity : AppCompatActivity() {
         """
         return withContext(Dispatchers.IO) {
             try {
-                val response = model.generateContent(prompt)
+                val response = newModel.generateContent(prompt)
                 response.text ?: "분석 결과를 얻지 못했습니다."
             } catch (e: Exception) {
                 "오류가 발생했습니다: ${e.message}"
@@ -223,10 +329,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     override fun onDestroy() {
         super.onDestroy()
         speechRecognizer.destroy()
         scope.cancel()
         alertDialog?.dismiss()
+        if (::ringtone.isInitialized && ringtone.isPlaying) {
+            ringtone.stop() //액티비티가 종료될 때 알림음도 함께 정지되도록 수정
+        }
     }
 }
