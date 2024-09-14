@@ -98,12 +98,15 @@ class GuardiansActivity : AppCompatActivity() {
 
         val smsManager = SmsManager.getDefault()
         for (guardianInfo in savedGuardians) {
-            val phone = guardianInfo.split(":")[1].trim() // 전화번호만 추출
+            val guardianDetails = guardianInfo.split(":") // "이름 : 전화번호" 형식으로 저장된 보호자 정보에서 나눔
+            val name = guardianDetails[0].trim() // 이름 추출
+            val phone = guardianDetails[1].trim() // 전화번호 추출
+
             try {
                 smsManager.sendTextMessage(phone, null, "[VoiceGuard 발신] 보호자 경고 기능 테스트 문제입니다.", null, null)
-                Toast.makeText(this, "$phone 에 메시지를 보냈습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "$name 에게 메시지를 보냈습니다.", Toast.LENGTH_SHORT).show() // 이름으로 메시지 전송 알림 표시
             } catch (e: Exception) {
-                Toast.makeText(this, "$phone 에 메시지를 보내지 못했습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "$name 에게 메시지를 보내지 못했습니다.", Toast.LENGTH_SHORT).show()
                 e.printStackTrace() // 예외 메시지 출력
             }
         }

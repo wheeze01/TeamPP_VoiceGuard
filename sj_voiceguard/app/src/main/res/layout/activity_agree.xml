@@ -22,7 +22,7 @@
         android:layout_height="0dp"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"
-        android:src="@drawable/voice_guard_logono2"
+        android:src="@drawable/voice_guard_logo"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/test_button"
         app:layout_constraintStart_toStartOf="parent"
