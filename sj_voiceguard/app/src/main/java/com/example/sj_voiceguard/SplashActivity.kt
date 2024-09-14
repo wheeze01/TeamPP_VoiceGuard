@@ -12,7 +12,7 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
 
         // 2초 후 메인 액티비티로 이동
-        val splashScreenDuration = 2000L
+        val splashScreenDuration = 2000L // 2초
         window.decorView.postDelayed({
             startActivity(Intent(this, TermsActivity::class.java))
             finish() // SplashActivity 종료
