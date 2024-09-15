@@ -16,17 +16,17 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/voice_guard_logono2"
+        android:icon="@drawable/voice_guard_logo"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@drawable/voice_guard_logono2"
+        android:theme="@drawable/voice_guard_logo"
         tools:targetApi="31">
 
-        <activity
-            android:name=".SplashActivity"
+        <activity android:name=".SplashActivity"
             android:theme="@style/SplashTheme"
-            android:exported="true"> <!-- SplashTheme 적용 -->
+            android:screenOrientation="portrait"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,25 +37,32 @@
         <activity
             android:name=".MainActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:screenOrientation="portrait"
             android:exported="true" />
+
         <activity
             android:name=".TermsActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:screenOrientation="portrait"
             android:exported="true" />
 
         <activity
             android:name=".CallAndDisconnect"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:screenOrientation="portrait"
         />
 
         <activity
             android:name=".AgreeAct"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:screenOrientation="portrait"
             />
         <activity
             android:name=".GuardiansActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:screenOrientation="portrait"
             />
+
     </application>
 
 </manifest>
