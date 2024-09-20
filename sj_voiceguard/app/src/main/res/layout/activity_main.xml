@@ -8,14 +8,15 @@
 
     <ImageView
         android:id="@+id/voiceGuardLogo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
         android:src="@drawable/voiceguard_logo"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp"
-        android:contentDescription="Voice Guard 로고" />
+        android:contentDescription="Voice Guard 로고"
+        android:scaleType="fitCenter" />
 
     <ScrollView
         android:id="@+id/scrollView"
@@ -43,14 +44,15 @@
 
     <ImageButton
         android:id="@+id/recordButton"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:src="@drawable/call_out"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="24dp"
         android:contentDescription="통화 종료"
-        android:background="?attr/selectableItemBackgroundBorderless" />
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:scaleType="fitCenter" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
