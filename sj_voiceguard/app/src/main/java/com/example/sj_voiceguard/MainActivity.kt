@@ -1,10 +1,14 @@
 package com.example.sj_voiceguard
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.Ringtone
+import android.media.RingtoneManager
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
 import android.os.Vibrator
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -38,10 +42,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recordButton: ImageButton
     private lateinit var speechResultText: TextView
 
-    // API 키 설정
-    private val chatGPTApiKey = "api1" // 실제 ChatGPT API 키로 교체하세요
-    private val upstageApiKey = "api2" // 실제 Upstage API 키로 교체하세요
-    private val anthropicApiKey = "api3" // 실제 Anthropic API 키로 교체하세요
+    // API 키 설
+    private val chatGPTApiKey = "" // 실제 ChatGPT API 키로 교체하세요
+    private val upstageApiKey = "" // 실제 Upstage API 키로 교체하세요
+    private val anthropicApiKey = "" // 실제 Anthropic API 키로 교체하세요
+    private val geminiApiKey = "" // Gemini AI API 키 추가
 
     // 코루틴 관련 변수
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -52,6 +57,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -86,7 +93,7 @@ class MainActivity : AppCompatActivity() {
             stopListening()
         } else {
             startListening()
-        }
+        }  //TEST
     }
 
     // 필요한 설정이 포함된 RecognizerIntent 생성 메서드
@@ -188,7 +195,7 @@ class MainActivity : AppCompatActivity() {
                 scrollView.fullScroll(View.FOCUS_DOWN)
             }
         }
-    }
+    } // tes
 
     // 최종 결과 처리 메서드
     private fun handleFinalResult(result: String) {
@@ -301,6 +308,8 @@ class MainActivity : AppCompatActivity() {
                     Log.d("AnalysisResult", "upstageAnalysis: $chatGPTAnalysis")
                     val claudeAnalysis = analyzeTextWithClaude(prompt)
                     Log.d("AnalysisResult", "claudeAnalysis: $chatGPTAnalysis")
+                    val geminiAnalysis = analyzeTextWithGemini(prompt)
+                    Log.d("AnalysisResult", "geminiAnalysis: $geminiAnalysis")
 
                     // 평균 점수 계산
                     val gptScore = extractScoreFromAnalysis(chatGPTAnalysis)
@@ -309,7 +318,9 @@ class MainActivity : AppCompatActivity() {
                     Log.d("AnalysisResult", "upstageScore: $upstageScore")
                     val claudeScore = extractScoreFromAnalysis(claudeAnalysis)
                     Log.d("AnalysisResult", "claudeScore: $claudeScore")
-                    val averageScore = (gptScore + upstageScore + claudeScore) / 3.0
+                    val geminiScore = extractScoreFromAnalysis(geminiAnalysis)
+                    Log.d("AnalysisResult", "geminiScore: $geminiScore")
+                    val averageScore = (gptScore + upstageScore + claudeScore + geminiScore) / 4.0
                     Log.d("AnalysisResult", "averageScore: $averageScore")
 
                     withContext(Dispatchers.Main) {
@@ -320,6 +331,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private lateinit var vibrator: Vibrator
     private lateinit var ringtone: Ringtone
 
     // GPT 분석 결과만 경고창에 표시하는 메서드
@@ -328,12 +340,28 @@ class MainActivity : AppCompatActivity() {
         Log.d("AnalysisResult", "평균 점수 : $averageScore")
 
         // 평균 점수가 7 이상일 때만 경고창을 표시
-        if (averageScore >= 7) {
+        if (averageScore >= 1) {
+            // 진동 실행
+            vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val vibrationEffect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
+                vibrator.vibrate(vibrationEffect)
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(500)
+            }
+
+            // 알람 소리 실행
+            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ringtone = RingtoneManager.getRingtone(applicationContext, alarmSound)
+            ringtone.play()
+
             alertDialog = AlertDialog.Builder(this)
                 .setTitle("AI 분석 경고")
                 .setMessage("경고: 보이스피싱 위험이 있습니다!\n\nGPT 분석 내용:\n$gptAnalysis")
                 .setPositiveButton("확인") { dialog, _ ->
                     dialog.dismiss()
+                    ringtone.stop() // 알람 소리 중지
                 }
                 .setCancelable(false)
                 .create()
@@ -556,6 +584,56 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 return@withContext "오류 발생: ${e.message}"
+            }
+        }
+    }
+
+    // Gemini AI 통신 메서드 추가
+    private suspend fun analyzeTextWithGemini(text: String): String {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS) // 타임아웃 설정
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+
+        val url = "https://api.gemini.com/v1/generative-models/completions" // Gemini API 엔드포인트
+
+        val jsonObject = JSONObject().apply {
+            put("model", "gemini-pro") // 사용하려는 모델 이름
+            put("prompt", text) // 분석할 텍스트
+            put("temperature", 0.9) // 설정 값
+            put("max_tokens", 2048) // 최대 토큰 수
+        }
+
+        val body: RequestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaType(), jsonObject.toString()
+        )
+
+        val request: Request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Bearer $geminiApiKey") // Gemini API 키 추가
+            .post(body)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseData = response.body?.string()
+
+                    if (!response.isSuccessful) {
+                        val errorJson = JSONObject(responseData ?: "")
+                        val errorMessage = errorJson.optJSONObject("error")?.optString("message")
+                            ?: "Gemini AI 오류 발생"
+                        return@withContext "Gemini AI 요청 실패: $errorMessage"
+                    }
+
+                    val jsonResponse = JSONObject(responseData ?: "")
+                    val messageContent = jsonResponse.optString("content", "결과 없음")
+
+                    return@withContext messageContent
+                }
+            } catch (e: Exception) {
+                return@withContext "Gemini AI 통신 오류: ${e.message}"
             }
         }
     }
