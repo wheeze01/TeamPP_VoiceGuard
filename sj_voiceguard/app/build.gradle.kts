@@ -36,7 +36,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -46,10 +45,10 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
-    implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation ("androidx.appcompat:appcompat:1.4.0")
-    implementation ("com.google.android.material:material:1.5.0")
-    implementation ("com.squareup.okhttp3:okhttp:4.9.1")  // OkHttp 라이브러리 추가
-    implementation ("org.json:json:20210307")  // JSON 파싱 라이브러리 추가
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.appcompat:appcompat:1.4.0")
+    implementation("com.google.android.material:material:1.5.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.1") // OkHttp 라이브러리 추가
+    implementation("org.json:json:20210307") // JSON 파싱 라이브러리 추가
 }

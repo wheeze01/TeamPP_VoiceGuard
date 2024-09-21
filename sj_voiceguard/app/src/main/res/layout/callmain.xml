@@ -32,7 +32,7 @@
             android:id="@+id/logo"
             android:layout_width="130dp"
             android:layout_height="130dp"
-            android:src="@drawable/voice_guard_logono2" />
+            android:src="@drawable/voice_guard_logo" />
 
         <!-- 타이틀 텍스트 -->
         <TextView
