@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -13,11 +15,13 @@ import android.os.Vibrator
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.telephony.SmsManager
 import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -43,9 +47,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var speechResultText: TextView
 
     // API 키 (실제 키로 교체하세요)
-    private val chatGPTApiKey = "api1" // 실제 ChatGPT API 키로 교체하세요
-    private val upstageApiKey = "api2" // 실제 Upstage API 키로 교체하세요
-    private val anthropicApiKey = "api3" // 실제 Anthropic API 키로 교체하세요
+    private val chatGPTApiKey = "" // 실제 ChatGPT API 키로 교체하세요
+    private val upstageApiKey = "" // 실제 Upstage API 키로 교체하세요
+    private val anthropicApiKey = "" // 실제 Anthropic API 키로 교체하세요
 
     // 코루틴 관련 변수
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -322,15 +326,27 @@ class MainActivity : AppCompatActivity() {
                     Log.d("AnalysisResult", "Upstage 분석 결과 : $upstageAnalysis")
                     Log.d("AnalysisResult", "Claude 분석 결과 : $claudeAnalysis")
 
-                    // 평균 점수 계산
+                    // 점수 추출
                     val gptScore = extractScoreFromAnalysis(chatGPTAnalysis)
                     val upstageScore = extractScoreFromAnalysis(upstageAnalysis)
                     val claudeScore = extractScoreFromAnalysis(claudeAnalysis)
 
+                    // 보이스피싱 유형 추출
+                    val gptCallType = extractCallType(chatGPTAnalysis)
+                    val upstageCallType = extractCallType(chatGPTAnalysis)
+                    val claudeCallType = extractCallType(chatGPTAnalysis)
+
                     val averageScore = (gptScore + upstageScore + claudeScore) / 3.0
 
+                    // 가장 높은 점수를 가진 AI의 통화 유형 선택
+                    val highestScoringCallType = listOf(
+                        Pair(gptScore, gptCallType),
+                        Pair(upstageScore, upstageCallType),
+                        Pair(claudeScore, claudeCallType),
+                    ).maxByOrNull { it.first }?.second ?: "알 수 없음"
+
                     withContext(Dispatchers.Main) {
-                        showAnalysisResult(chatGPTAnalysis, averageScore)
+                        showAnalysisResult(chatGPTAnalysis, averageScore, highestScoringCallType)
                     }
                 }
             }
@@ -359,13 +375,20 @@ class MainActivity : AppCompatActivity() {
         return score
     }
 
+    // 통화 내역 유형을 추출하는 메서드
+    private fun extractCallType(analysis: String): String {
+        val regex = "(?:통화 내역 유형|통화 유형):\\s*(.+)".toRegex(RegexOption.IGNORE_CASE)
+        val matchResult = regex.find(analysis)
+        return matchResult?.groupValues?.get(1)?.trim() ?: "알 수 없음"
+    }
+
     // 분석 결과를 보여주는 함수
-    private fun showAnalysisResult(gptAnalysis: String, averageScore: Double) {
+    private fun showAnalysisResult(gptAnalysis: String, averageScore: Double, callType: String) {
         alertDialog?.dismiss()
-        Log.d("AnalysisResult", "평균 점수: $averageScore")
+        Log.d("AnalysisResult", "평균 점수 : $averageScore")
 
         // 평균 점수가 7 이상일 때만 경고창을 표시
-        if (averageScore >= 7) {
+        if (averageScore >= 7.0) {
             // 진동 실행
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrationEffect = VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE)
@@ -375,17 +398,39 @@ class MainActivity : AppCompatActivity() {
                 vibrator.vibrate(1000)
             }
 
+            // 보호자에게 경고 메시지 SMS로 보내기
+            sendDangerMessageToGuardians()
+
             // 알람 소리 실행
-            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ringtone = RingtoneManager.getRingtone(applicationContext, alarmSound)
+            val customSound = Uri.parse("android.resource://$packageName/${R.raw.beepbeep}")
+            ringtone = RingtoneManager.getRingtone(applicationContext, customSound)
+
+            // 볼륨 설정 (선택사항)
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_ALARM, audioManager.getStreamMaxVolume(
+                    AudioManager.STREAM_ALARM) / 2, 0)
+
             ringtone.play()
 
+            // 통화 내역 유형 추출
+            val callType = extractCallType(gptAnalysis)
+
             alertDialog = AlertDialog.Builder(this)
-                .setTitle("AI 분석 경고")
-                .setMessage("경고: 보이스피싱 위험이 있습니다!\n\nGPT 분석 내용:\n$gptAnalysis")
+                .setTitle("⚠️주의")
+                .setMessage("경고: 보이스피싱 위험이 있습니다!\n\n평균 점수: ${"%.2f".format(averageScore)}\n통화 내역 유형: $callType")
                 .setPositiveButton("확인") { dialog, _ ->
                     dialog.dismiss()
                     ringtone.stop() // 알람 소리 중지
+                }
+                .setNegativeButton("통화 끊기") { _, _ ->
+                    ringtone.stop()
+                    stopListening()
+                }
+                .setNeutralButton("자세히 보기") { dialog, _ ->
+                    dialog.dismiss()
+                    ringtone.stop() // 알람 소리 중지
+                    showDetailedAnalysis(gptAnalysis, averageScore, callType)
                 }
                 .setCancelable(false)
                 .create()
@@ -396,6 +441,78 @@ class MainActivity : AppCompatActivity() {
             Log.d("AnalysisResult", "보이스피싱 위험이 낮음. 경고창을 표시하지 않습니다.")
         }
     }
+
+    // 자세히 보기
+    private fun showDetailedAnalysis(analysis: String, averageScore: Double, callType: String) {
+        val scrollView = ScrollView(this)
+        val textView = TextView(this)
+        textView.text = "평균 점수: ${"%.2f".format(averageScore)}\n통화 내역 유형: $callType\n\n$analysis"
+        textView.setPadding(20, 20, 20, 20)
+        scrollView.addView(textView)
+
+        AlertDialog.Builder(this)
+            .setTitle("상세 분석 결과")
+            .setView(scrollView)
+            .setPositiveButton("확인", null)
+            .show()
+    }
+
+    // 보호자에게 SMS로 보내는 경고창
+    private fun sendDangerMessageToGuardians() {
+        // SMS 권한 확인
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.SEND_SMS), 1)
+        } else {
+            // 권한이 허용된 경우
+            val sharedPrefs = getSharedPreferences("GuardiansPrefs", Context.MODE_PRIVATE)
+            val savedGuardians = sharedPrefs.getStringSet("guardians", emptySet())
+
+            // 보호자 정보가 비어있을 경우
+            if (savedGuardians.isNullOrEmpty()) {
+                Toast.makeText(this, "저장된 보호자 전화번호가 없습니다.", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val smsManager = SmsManager.getDefault()
+
+            // 보호자 정보 순회
+            for (guardianInfo in savedGuardians) {
+                val guardianDetails = guardianInfo.split(":") // "이름 : 전화번호" 형식으로 저장된 보호자 정보에서 나눔
+                if (guardianDetails.size < 2) {
+                    // 잘못된 형식의 보호자 정보 처리
+                    Log.e("SMS_SEND", "잘못된 보호자 정보: $guardianInfo")
+                    continue
+                }
+
+                val name = guardianDetails[0].trim() // 이름 추출
+                var phone = guardianDetails[1].trim() // 전화번호 추출
+
+                // 전화번호 형식 정리 (공백 및 대시 제거)
+                phone = phone.replace(" ", "").replace("-", "")
+
+                if (phone.isEmpty()) {
+                    Log.e("SMS_SEND", "전화번호가 비어 있습니다: $guardianInfo")
+                    continue
+                }
+
+                try {
+                    // 메시지 내용
+                    val message = "[VoiceGuard 발신] 경고: 피보호자가 보이스피싱 전화를 받고 있습니다. 즉시 확인이 필요합니다! "
+                    // 메시지 전송
+                    smsManager.sendTextMessage(phone, null, message, null, null)
+                    Toast.makeText(this, "$name 에게 경고 메시지를 보냈습니다.", Toast.LENGTH_SHORT).show()
+                    Log.d("SMS_SEND", "$name ($phone) 에게 메시지가 성공적으로 전송되었습니다.")
+
+                } catch (e: Exception) {
+                    // 전송 실패 시 처리
+                    Toast.makeText(this, "$name 에게 메시지를 보내지 못했습니다.", Toast.LENGTH_SHORT).show()
+                    Log.e("SMS_SEND_ERROR", "메시지 전송 실패 ($phone): ${e.message}")
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
 
     // ChatGPT API 통신 함수
     private suspend fun analyzeTextWithChatGPT(text: String): String {
