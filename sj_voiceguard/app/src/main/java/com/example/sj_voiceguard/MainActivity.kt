@@ -42,16 +42,23 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recordButton: ImageButton
     private lateinit var speechResultText: TextView
 
-    // API 키 설
-    private val chatGPTApiKey = "" // 실제 ChatGPT API 키로 교체하세요
-    private val upstageApiKey = "" // 실제 Upstage API 키로 교체하세요
-    private val anthropicApiKey = "" // 실제 Anthropic API 키로 교체하세요
-    private val geminiApiKey = "" // Gemini AI API 키 추가
+    // API 키 (실제 키로 교체하세요)
+    private val chatGPTApiKey = "api1" // 실제 ChatGPT API 키로 교체하세요
+    private val upstageApiKey = "api2" // 실제 Upstage API 키로 교체하세요
+    private val anthropicApiKey = "api3" // 실제 Anthropic API 키로 교체하세요
 
     // 코루틴 관련 변수
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var analysisJob: Job? = null
     private var alertDialog: AlertDialog? = null
+
+    // 진동 및 알람 소리
+    private lateinit var vibrator: Vibrator
+    private lateinit var ringtone: Ringtone
+
+    // 음성 결과를 처리하기 위한 변수들
+    private var accumulatedText = "" // 누적된 텍스트
+    private var currentPartialText = "" // 현재 부분 결과
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,7 +100,7 @@ class MainActivity : AppCompatActivity() {
             stopListening()
         } else {
             startListening()
-        }  //TEST
+        }
     }
 
     // 필요한 설정이 포함된 RecognizerIntent 생성 메서드
@@ -115,7 +122,12 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 1)
+            // 권한 요청
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                1
+            )
         } else {
             isListening = true
             speechResultText.text = "" // 이전 결과 초기화
@@ -139,6 +151,10 @@ class MainActivity : AppCompatActivity() {
         analysisJob?.cancel()
         alertDialog?.dismiss()
 
+        if (::ringtone.isInitialized && ringtone.isPlaying) {
+            ringtone.stop()
+        }
+
         val intent = Intent(this, AgreeAct::class.java)
         startActivity(intent)
         finish()
@@ -148,7 +164,8 @@ class MainActivity : AppCompatActivity() {
     private fun createRecognitionListener(): RecognitionListener {
         return object : RecognitionListener {
             override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val matches =
+                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 matches?.get(0)?.let { result -> handleFinalResult(result) }
                 if (isListening) {
                     speechRecognizer.startListening(getRecognizerIntent())
@@ -156,7 +173,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
-                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val matches =
+                    partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 matches?.get(0)?.let { result ->
                     if (result != currentPartialText) {
                         currentPartialText = result
@@ -178,13 +196,10 @@ class MainActivity : AppCompatActivity() {
             override fun onEndOfSpeech() {
                 currentPartialText = ""
             }
+
             override fun onEvent(eventType: Int, params: Bundle?) {}
         }
     }
-
-    // 음성 결과를 처리하기 위한 변수들
-    private var accumulatedText = "" // 누적된 텍스트
-    private var currentPartialText = "" // 현재 부분 결과
 
     // 부분 결과 처리 메서드
     private fun handlePartialResult(result: String) {
@@ -195,7 +210,7 @@ class MainActivity : AppCompatActivity() {
                 scrollView.fullScroll(View.FOCUS_DOWN)
             }
         }
-    } // tes
+    }
 
     // 최종 결과 처리 메서드
     private fun handleFinalResult(result: String) {
@@ -219,7 +234,7 @@ class MainActivity : AppCompatActivity() {
                 if (accumulatedText.isNotEmpty()) {
                     val textToAnalyze = accumulatedText
                     val prompt = """
-                주어진 통화 텍스트 데이터를 분석하여 해당 통화가 보이스피싱인지 판단하고, 보이스피싱 위험 점수를 산출하세요. 분석은 각 보이스피싱 유형별 판단 기준에 따라 이루어지며, Chain of Thought 방식을 사용하여 단계별로 판단합니다. 최종 결과는 지정된 형식으로 출력하세요.
+                    주어진 통화 텍스트 데이터를 분석하여 해당 통화가 보이스피싱인지 판단하고, 보이스피싱 위험 점수를 산출하세요. 분석은 각 보이스피싱 유형별 판단 기준에 따라 이루어지며, Chain of Thought 방식을 사용하여 단계별로 판단합니다. 최종 결과는 지정된 형식으로 출력하세요.
 ---
 분석 방법:
 1. 통화 데이터 분석: 통화 내용을 자세히 읽고, 중요한 정보와 키워드를 파악합니다.
@@ -298,30 +313,21 @@ class MainActivity : AppCompatActivity() {
 ---
 아래에 주어진 통화 데이터를 분석하여 위의 지침에 따라 판단하고, 결과를 지정된 형식으로 출력하세요.
 ---
+                    [$textToAnalyze]
+                    """.trimIndent()
 
-                [$textToAnalyze]
-                """
-                    Log.d("AnalysisResult", "prompt: $prompt")
-                    val chatGPTAnalysis = analyzeTextWithChatGPT(prompt)
-                    Log.d("AnalysisResult", "chatGPTAnalysis: $chatGPTAnalysis")
-                    val upstageAnalysis = analyzeTextWithUpstage(prompt)
-                    Log.d("AnalysisResult", "upstageAnalysis: $chatGPTAnalysis")
-                    val claudeAnalysis = analyzeTextWithClaude(prompt)
-                    Log.d("AnalysisResult", "claudeAnalysis: $chatGPTAnalysis")
-                    val geminiAnalysis = analyzeTextWithGemini(prompt)
-                    Log.d("AnalysisResult", "geminiAnalysis: $geminiAnalysis")
+                    // 모든 모델을 동시에 호출
+                    val (chatGPTAnalysis, upstageAnalysis, claudeAnalysis) = analyzeTextWithAllModels(prompt)
+                    Log.d("AnalysisResult", "GPT 분석 결과 : $chatGPTAnalysis")
+                    Log.d("AnalysisResult", "Upstage 분석 결과 : $upstageAnalysis")
+                    Log.d("AnalysisResult", "Claude 분석 결과 : $claudeAnalysis")
 
                     // 평균 점수 계산
                     val gptScore = extractScoreFromAnalysis(chatGPTAnalysis)
-                    Log.d("AnalysisResult", "gptScore: $gptScore")
                     val upstageScore = extractScoreFromAnalysis(upstageAnalysis)
-                    Log.d("AnalysisResult", "upstageScore: $upstageScore")
                     val claudeScore = extractScoreFromAnalysis(claudeAnalysis)
-                    Log.d("AnalysisResult", "claudeScore: $claudeScore")
-                    val geminiScore = extractScoreFromAnalysis(geminiAnalysis)
-                    Log.d("AnalysisResult", "geminiScore: $geminiScore")
-                    val averageScore = (gptScore + upstageScore + claudeScore + geminiScore) / 4.0
-                    Log.d("AnalysisResult", "averageScore: $averageScore")
+
+                    val averageScore = (gptScore + upstageScore + claudeScore) / 3.0
 
                     withContext(Dispatchers.Main) {
                         showAnalysisResult(chatGPTAnalysis, averageScore)
@@ -331,24 +337,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var vibrator: Vibrator
-    private lateinit var ringtone: Ringtone
+    // 모든 모델을 동시에 호출하는 함수
+    private suspend fun analyzeTextWithAllModels(prompt: String): List<String> = coroutineScope {
+        val gptDeferred = async { analyzeTextWithChatGPT(prompt) }
+        val upstageDeferred = async { analyzeTextWithUpstage(prompt) }
+        val claudeDeferred = async { analyzeTextWithClaude(prompt) }
 
-    // GPT 분석 결과만 경고창에 표시하는 메서드
+        listOf(
+            gptDeferred.await(),
+            upstageDeferred.await(),
+            claudeDeferred.await(),
+        )
+    }
+
+    // 분석 결과에서 점수 추출
+    private fun extractScoreFromAnalysis(analysis: String): Int {
+        val regex = Regex("(?:최종|총)\\s*(?:점수|스코어)\\s*[:]?\\s*(\\d+)", RegexOption.IGNORE_CASE)
+        val matchResult = regex.find(analysis)
+        val score = matchResult?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        Log.d("AnalysisResult", "추출된 점수: $score, 원본 텍스트: ${matchResult?.value}")
+        return score
+    }
+
+    // 분석 결과를 보여주는 함수
     private fun showAnalysisResult(gptAnalysis: String, averageScore: Double) {
         alertDialog?.dismiss()
-        Log.d("AnalysisResult", "평균 점수 : $averageScore")
+        Log.d("AnalysisResult", "평균 점수: $averageScore")
 
         // 평균 점수가 7 이상일 때만 경고창을 표시
-        if (averageScore >= 1) {
+        if (averageScore >= 7) {
             // 진동 실행
-            vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val vibrationEffect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
+                val vibrationEffect = VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE)
                 vibrator.vibrate(vibrationEffect)
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(500)
+                vibrator.vibrate(1000)
             }
 
             // 알람 소리 실행
@@ -373,47 +397,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /*
-    // 세 AI 모델을 사용하여 텍스트 분석
-    private suspend fun analyzeText(text: String): String {
-
-
-        val chatGPTAnalysis = analyzeTextWithChatGPT(prompt)
-        val upstageAnalysis = analyzeTextWithUpstage(prompt)
-        val claudeAnalysis = analyzeTextWithClaude(prompt)
-
-        // 각 분석 결과에서 최종 점수 추출
-        val gptScore = extractScoreFromAnalysis(chatGPTAnalysis)
-        val upstageScore = extractScoreFromAnalysis(upstageAnalysis)
-        val claudeScore = extractScoreFromAnalysis(claudeAnalysis)
-
-        // 점수 평균 계산
-        val averageScore = (gptScore + upstageScore + claudeScore) / 3.0
-
-        return """
-           GPT 분석 결과:
-            $chatGPTAnalysis
-            upstage 분석 결과:
-            $upstageAnalysis
-            claude 분석 결과:
-            $claudeAnalysis
-        """.trimIndent()
-    }
-    */
-
-    // 분석 결과에서 "최종 점수: X" 형식의 점수를 추출하는 메서드
-    private fun extractScoreFromAnalysis(analysis: String): Int {
-        val regex = "(?:최종|총)\\s*(?:점수|스코어)\\s*:?\\s*(\\d+)".toRegex(RegexOption.IGNORE_CASE)
-        val matchResult = regex.findAll(analysis).lastOrNull()
-        val score = matchResult?.groupValues?.get(1)?.toIntOrNull() ?: 0
-        Log.d("AnalysisResult", "추출된 점수: $score, 원본 텍스트: ${matchResult?.value}")
-        return score
-    }
-
-
     // ChatGPT API 통신 함수
     private suspend fun analyzeTextWithChatGPT(text: String): String {
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS) // 타임아웃 설정
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
         val url = "https://api.openai.com/v1/chat/completions"
 
         val jsonObject = JSONObject().apply {
@@ -467,9 +457,9 @@ class MainActivity : AppCompatActivity() {
     // Upstage API 통신 함수
     private suspend fun analyzeTextWithUpstage(text: String): String {
         val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS) // 연결 타임아웃 설정
-            .writeTimeout(30, TimeUnit.SECONDS)   // 쓰기 타임아웃 설정
-            .readTimeout(30, TimeUnit.SECONDS)    // 읽기 타임아웃 설정
+            .connectTimeout(30, TimeUnit.SECONDS) // 타임아웃 설정
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .build()
         val url = "https://api.upstage.ai/v1/solar/chat/completions"
         val jsonObject = JSONObject().apply {
@@ -519,6 +509,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Claude API 통신 함수
     private suspend fun analyzeTextWithClaude(text: String): String {
         val client = OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
@@ -588,56 +579,44 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Gemini AI 통신 메서드 추가
-    private suspend fun analyzeTextWithGemini(text: String): String {
-        val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS) // 타임아웃 설정
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
+    // 권한 요청 결과 처리
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults) // 추가된 부분
 
-        val url = "https://api.gemini.com/v1/generative-models/completions" // Gemini API 엔드포인트
-
-        val jsonObject = JSONObject().apply {
-            put("model", "gemini-pro") // 사용하려는 모델 이름
-            put("prompt", text) // 분석할 텍스트
-            put("temperature", 0.9) // 설정 값
-            put("max_tokens", 2048) // 최대 토큰 수
-        }
-
-        val body: RequestBody = RequestBody.create(
-            "application/json; charset=utf-8".toMediaType(), jsonObject.toString()
-        )
-
-        val request: Request = Request.Builder()
-            .url(url)
-            .addHeader("Authorization", "Bearer $geminiApiKey") // Gemini API 키 추가
-            .post(body)
-            .build()
-
-        return withContext(Dispatchers.IO) {
-            try {
-                client.newCall(request).execute().use { response ->
-                    val responseData = response.body?.string()
-
-                    if (!response.isSuccessful) {
-                        val errorJson = JSONObject(responseData ?: "")
-                        val errorMessage = errorJson.optJSONObject("error")?.optString("message")
-                            ?: "Gemini AI 오류 발생"
-                        return@withContext "Gemini AI 요청 실패: $errorMessage"
-                    }
-
-                    val jsonResponse = JSONObject(responseData ?: "")
-                    val messageContent = jsonResponse.optString("content", "결과 없음")
-
-                    return@withContext messageContent
+        when (requestCode) {
+            1 -> {
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    // 권한 허용됨, 음성 인식 시작
+                    startListening()
+                } else {
+                    // 권한 거부됨, 사용자에게 설명 및 재요청
+                    AlertDialog.Builder(this)
+                        .setTitle("권한 필요")
+                        .setMessage("이 앱은 정상적인 작동을 위해 마이크 접근 권한이 필요합니다.")
+                        .setPositiveButton("권한 허용") { _, _ ->
+                            ActivityCompat.requestPermissions(
+                                this,
+                                arrayOf(Manifest.permission.RECORD_AUDIO),
+                                1
+                            )
+                        }
+                        .setNegativeButton("취소") { dialog, _ ->
+                            dialog.dismiss()
+                        }
+                        .setCancelable(false)
+                        .create()
+                        .show()
                 }
-            } catch (e: Exception) {
-                return@withContext "Gemini AI 통신 오류: ${e.message}"
+            }
+            else -> {
+                // 다른 요청 코드 처리
             }
         }
     }
-
 
     override fun onDestroy() {
         super.onDestroy()
