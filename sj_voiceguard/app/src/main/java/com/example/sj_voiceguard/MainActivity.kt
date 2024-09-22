@@ -377,7 +377,10 @@ class MainActivity : AppCompatActivity() {
 
     // 분석 결과에서 점수 추출
     private fun extractScoreFromAnalysis(analysis: String): Int {
-        val regex = Regex("(?:최종|총)\\s*(?:점수|스코어)\\s*[:]?\\s*(\\d+)", RegexOption.IGNORE_CASE)
+        val regex = Regex(
+            pattern = """(?:\d+\.\s*)?(?:\*\*)?(?:최종|총)\s*(?:점수|스코어)(?:\*\*)?\s*[:：]?\s*(\d+)\s*점?""",
+            options = setOf(RegexOption.IGNORE_CASE)
+        )
         val matchResult = regex.find(analysis)
         val score = matchResult?.groupValues?.get(1)?.toIntOrNull() ?: 0
         Log.d("AnalysisResult", "추출된 점수: $score, 원본 텍스트: ${matchResult?.value}")
@@ -386,7 +389,10 @@ class MainActivity : AppCompatActivity() {
 
     // 통화 내역 유형을 추출하는 메서드
     private fun extractCallType(analysis: String): String {
-        val regex = "(?:통화 내역 유형|통화 유형):\\s*(.+)".toRegex(RegexOption.IGNORE_CASE)
+        val regex = Regex(
+            pattern = """(?:\d+\.\s*)?(?:\*\*)?(?:통화\s*(?:내역\s*)?유형)(?:\*\*)?\s*[:：]?\s*(.+)""",
+            options = setOf(RegexOption.IGNORE_CASE)
+        )
         val matchResult = regex.find(analysis)
         return matchResult?.groupValues?.get(1)?.trim() ?: "알 수 없음"
     }
@@ -397,7 +403,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("AnalysisResult", "평균 점수 : $averageScore")
 
         // 평균 점수가 7 이상일 때만 경고창을 표시
-        if (averageScore >= 1.0) {
+        if (averageScore >= 7.0) {
             // 진동 실행
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrationEffect = VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE)

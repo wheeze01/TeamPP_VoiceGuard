@@ -248,4 +248,3 @@ class GuardiansActivity : AppCompatActivity() {
         override fun getItemCount(): Int = guardians.size
     }
 }
-ㅍ
