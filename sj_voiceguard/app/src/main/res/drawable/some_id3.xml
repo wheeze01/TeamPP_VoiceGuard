@@ -21,10 +21,10 @@
                 <aapt:attr name="android:fillColor">
                     <gradient
                         android:type="linear"
-                        android:startX="90"
-                        android:startY="400"
-                        android:endX="270"
-                        android:endY="400">
+                        android:startX="180"
+                        android:startY="0"
+                        android:endX="180"
+                        android:endY="800">
                         <item
                             android:color="#CFE1FC"
                             android:offset="0.246" />

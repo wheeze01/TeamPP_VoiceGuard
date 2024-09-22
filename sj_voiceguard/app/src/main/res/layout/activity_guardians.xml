@@ -60,7 +60,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="보호자 기능 테스트"
-                android:backgroundTint="#FF5722"
+                android:backgroundTint="#6CA6CD"
                 android:textColor="#FFFFFF"
                 android:layout_marginStart="16dp"/>
         </LinearLayout>
