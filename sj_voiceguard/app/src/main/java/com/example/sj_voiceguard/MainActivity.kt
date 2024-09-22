@@ -16,6 +16,8 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.telephony.SmsManager
+import android.text.Html
+import android.text.Spanned
 import android.util.Log
 import android.view.View
 import android.widget.ImageButton
@@ -50,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private val chatGPTApiKey = "" // 실제 ChatGPT API 키로 교체하세요
     private val upstageApiKey = "" // 실제 Upstage API 키로 교체하세요
     private val anthropicApiKey = "" // 실제 Anthropic API 키로 교체하세요
+    private val geminiApiKey = "" // Gemini AI API 키 추가
 
     // 코루틴 관련 변수
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -321,28 +324,32 @@ class MainActivity : AppCompatActivity() {
                     """.trimIndent()
 
                     // 모든 모델을 동시에 호출
-                    val (chatGPTAnalysis, upstageAnalysis, claudeAnalysis) = analyzeTextWithAllModels(prompt)
+                    val (chatGPTAnalysis, upstageAnalysis, claudeAnalysis, geminiAnalysis) = analyzeTextWithAllModels(prompt)
                     Log.d("AnalysisResult", "GPT 분석 결과 : $chatGPTAnalysis")
                     Log.d("AnalysisResult", "Upstage 분석 결과 : $upstageAnalysis")
                     Log.d("AnalysisResult", "Claude 분석 결과 : $claudeAnalysis")
+                    Log.d("AnalysisResult", "Gemini 분석 결과 : $geminiAnalysis")
 
                     // 점수 추출
                     val gptScore = extractScoreFromAnalysis(chatGPTAnalysis)
                     val upstageScore = extractScoreFromAnalysis(upstageAnalysis)
                     val claudeScore = extractScoreFromAnalysis(claudeAnalysis)
+                    val geminiScore = extractScoreFromAnalysis(geminiAnalysis)
 
                     // 보이스피싱 유형 추출
                     val gptCallType = extractCallType(chatGPTAnalysis)
                     val upstageCallType = extractCallType(chatGPTAnalysis)
                     val claudeCallType = extractCallType(chatGPTAnalysis)
+                    val geminiCallType = extractCallType(geminiAnalysis)
 
-                    val averageScore = (gptScore + upstageScore + claudeScore) / 3.0
+                    val averageScore = (gptScore + upstageScore + claudeScore + geminiScore) / 4.0
 
                     // 가장 높은 점수를 가진 AI의 통화 유형 선택
                     val highestScoringCallType = listOf(
                         Pair(gptScore, gptCallType),
                         Pair(upstageScore, upstageCallType),
                         Pair(claudeScore, claudeCallType),
+                        Pair(geminiScore, geminiCallType)
                     ).maxByOrNull { it.first }?.second ?: "알 수 없음"
 
                     withContext(Dispatchers.Main) {
@@ -358,11 +365,13 @@ class MainActivity : AppCompatActivity() {
         val gptDeferred = async { analyzeTextWithChatGPT(prompt) }
         val upstageDeferred = async { analyzeTextWithUpstage(prompt) }
         val claudeDeferred = async { analyzeTextWithClaude(prompt) }
+        val geminiDeferred = async { analyzeTextWithGemini(prompt) }
 
         listOf(
             gptDeferred.await(),
             upstageDeferred.await(),
             claudeDeferred.await(),
+            geminiDeferred.await()
         )
     }
 
@@ -388,7 +397,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("AnalysisResult", "평균 점수 : $averageScore")
 
         // 평균 점수가 7 이상일 때만 경고창을 표시
-        if (averageScore >= 7.0) {
+        if (averageScore >= 1.0) {
             // 진동 실행
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrationEffect = VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE)
@@ -415,14 +424,18 @@ class MainActivity : AppCompatActivity() {
 
             // 통화 내역 유형 추출
             val callType = extractCallType(gptAnalysis)
+            val formattedMessage = Html.fromHtml(
+                "의심스러운 통화 발견!<br>" +
+                        "이 통화는 보이스피싱일 가능성이 높습니다.<br><br>" +
+                        "위험 점수: <font color='#FF0000'>${"%.2f".format(averageScore)}</font><br>" +
+                        "통화 내역 유형: <font color='#FF0000'>$callType</font>",
+                Html.FROM_HTML_MODE_LEGACY
+            )
 
             alertDialog = AlertDialog.Builder(this)
-                .setTitle("⚠️주의")
-                .setMessage("경고: 보이스피싱 위험이 있습니다!\n\n평균 점수: ${"%.2f".format(averageScore)}\n통화 내역 유형: $callType")
-                .setPositiveButton("확인") { dialog, _ ->
-                    dialog.dismiss()
-                    ringtone.stop() // 알람 소리 중지
-                }
+                .setTitle(Html.fromHtml("<b>경고</b>", Html.FROM_HTML_MODE_LEGACY))
+                .setIcon(R.drawable.ic_warning)
+                .setMessage(formattedMessage)
                 .setNegativeButton("통화 끊기") { _, _ ->
                     ringtone.stop()
                     stopListening()
@@ -453,7 +466,10 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("상세 분석 결과")
             .setView(scrollView)
-            .setPositiveButton("확인", null)
+            .setNegativeButton("통화 끊기") { _, _ ->
+                stopListening()
+            }
+            .setNeutralButton("확인", null)
             .show()
     }
 
@@ -692,6 +708,65 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 return@withContext "오류 발생: ${e.message}"
+            }
+        }
+    }
+
+    //gemini 통신 함수 추가
+    private suspend fun analyzeTextWithGemini(text: String): String {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=$geminiApiKey"
+
+        val jsonObject = JSONObject().apply {
+            put("contents", JSONArray().put(
+                JSONObject().put("parts", JSONArray().put(
+                    JSONObject().put("text", text)
+                ))
+            ))
+        }
+
+        val body: RequestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaType(), jsonObject.toString()
+        )
+
+        val request: Request = Request.Builder()
+            .url(url)
+            .post(body)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseData = response.body?.string()
+
+                    if (!response.isSuccessful) {
+                        val errorJson = JSONObject(responseData ?: "")
+                        val errorMessage = errorJson.optJSONObject("error")?.optString("message")
+                            ?: "알 수 없는 오류가 발생했습니다."
+                        return@withContext "Gemini API 요청 실패: $errorMessage"
+                    }
+
+                    val jsonResponse = JSONObject(responseData ?: "")
+                    val candidates = jsonResponse.optJSONArray("candidates")
+
+                    if (candidates == null || candidates.length() == 0) {
+                        return@withContext "Gemini 응답에 'candidates' 필드가 없거나 비어 있습니다."
+                    }
+
+                    val content = candidates.getJSONObject(0)
+                        .getJSONObject("content")
+                        .getJSONArray("parts")
+                        .getJSONObject(0)
+                        .getString("text")
+
+                    return@withContext content
+                }
+            } catch (e: Exception) {
+                return@withContext "Gemini 오류가 발생했습니다: ${e.message}"
             }
         }
     }

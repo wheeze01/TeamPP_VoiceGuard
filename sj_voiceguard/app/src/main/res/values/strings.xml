@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">sj_voiceguard</string>
+    <string name="app_name">VoiceGuard</string>
     <string name="record_button_description">녹음</string>
     <string name="terms_required">(필수) <font color='#000000'>[개인정보 수집 및 이용 동의]</font></string>
     <string name="terms_details">
