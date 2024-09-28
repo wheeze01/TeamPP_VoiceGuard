@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
     private val chatGPTApiKey = "" // 실제 ChatGPT API 키로 교체하세요
     private val upstageApiKey = "" // 실제 Upstage API 키로 교체하세요
     private val anthropicApiKey = "" // 실제 Anthropic API 키로 교체하세요
-    private val geminiApiKey = "" // Gemini AI API 키 추가
+    private val geminiApiKey = "" // 실제 Gemini API 키로 교체하세요
 
     // 코루틴 관련 변수
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -241,82 +241,38 @@ class MainActivity : AppCompatActivity() {
                 if (accumulatedText.isNotEmpty()) {
                     val textToAnalyze = accumulatedText
                     val prompt = """
-                    주어진 통화 텍스트 데이터를 분석하여 해당 통화가 보이스피싱인지 판단하고, 보이스피싱 위험 점수를 산출하세요. 분석은 각 보이스피싱 유형별 판단 기준에 따라 이루어지며, Chain of Thought 방식을 사용하여 단계별로 판단합니다. 최종 결과는 지정된 형식으로 출력하세요.
+                    두 사람 간의 전화 통화 스크립트가 주어질거야. 이 통화 스크립트를 분석해서 이 대화가 보이스 피싱 대화일 가능성을 0에서 10사이의 정수로 대답해줘. Chain of Thought 방식을 사용하여 단계별로 판단합니다. 최종 결과는 지정된 형식으로 출력하세요.
+
+-- 보이스피싱 평가기준 --
+- 기존의 대출을 상환하면 새 대출의 한도가 올라가는 이유로 입금을 유도하는 내용
+- ATM기로 이동하여 돈을 입금 또는 출금할 것을 지시
+- 통장 계좌나 통장을 빌려주면 임대료 또는 돈을 준다는 내용
+- 1금융의 은행 대행 업무를 해 줌
+- 대위 변제(subrogation reimbursement)용 계좌로 상환하라는 내용
+- 원격제어 프로그램 또는 인증용 앱 다운로드 안내
+- 가족 또는 지인에게 긴급한 문제의 해결을 위해 돈을 요구
+- 개인정보 유출 또는 범죄 사건 연루 내용
+- 계좌보호 조치 또는 범죄혐의 탈피 등 명분하에 특정 계좌로 이체 유도
+- 주민 번호 열세자리를 확인, 요청, 불러달라는 내용
+- 녹취를 위하여 조용한 장소로 이동하라는 내용
+- 특정 인터넷 IP주소를 검색하라는 내용
+- 카드나 통장을 퀵서비스나 택배로 보내라는 내용
+- 대포통장과 관련된 내용
+- 은행 직원에게 비밀로 하거나 거짓말을 요구
+- 신뢰를 유도하는 정보 또는 긴급성을 부각하는 내용
+- 자신을 검사, 경찰 직원이라고 얘기하는 내용
+- 편법이나 조작으로 신용평점 또는 대출한도를 상향시키는 방법 안내
+- 불확실성과 혼란을 조성하는 내용
 ---
-분석 방법:
-1. 통화 데이터 분석: 통화 내용을 자세히 읽고, 중요한 정보와 키워드를 파악합니다.
-2. 보이스피싱 유형 판단: 아래에 제시된 보이스피싱 유형별 판단 기준에 따라 통화 내용이 어떤 유형에 해당하는지 판단합니다.
-3. 판단 기준별 점수 부여:
- - 해당 사항 없음: 0점
- - 일부 해당하거나 애매함: 1점
- - 명확하게 해당함: 2점
-4. 총점 계산: 해당 유형의 판단 기준별 점수를 합산하여 총점을 계산합니다. 최대 점수는 10점입니다.
-5. 보이스피싱 가능성 판단:
- - 총점이 7점 이상이면 보이스피싱 가능성이 높음
- - 총점이 7점 미만이면 보이스피싱 가능성이 낮음
-6. Chain of Thought 서술: 판단 과정과 이유를 단계별로 상세히 서술합니다.
-7. 결과 출력: 최종 결과를 지정된 형식에 맞게 1번만 출력합니다.
----
-보이스피싱 유형별 판단 기준:
-1. 대출사기형 보이스피싱 판단 기준
- - C1: 민감한 개인정보(이름, 주소, 주민등록번호 등)를 요구했는가?
- - C2: 비정상적인 대출 조건(초저금리, 무담보 등)을 제시했는가?
- - C3: 대출 승인 전에 수수료나 비용을 요구했는가?
- - C4: 개인 계좌로 송금을 요청했는가?
- - C5: 금융기관을 사칭했는가?
-2. 수사기관 사칭형 보이스피싱 판단 기준
- - C1: 경찰, 검찰 등 수사기관을 사칭했는가?
- - C2: 사용자가 범죄에 연루되었다고 주장했는가?
- - C3: 개인정보(이름, 주민등록번호 등)를 요구했는가?
- - C4: 자금 이체나 송금을 요구했는가?
- - C5: 공공기관에서 제공할 수 없는 서비스를 언급했는가?
-3. 결제사칭형 보이스피싱 판단 기준
- - C1: 사용자가 결제하지 않은 상품 또는 서비스에 대한 결제 알림을 보냈는가?
- - C2: 민감한 개인정보(이름, 생년월일, 주소 등)를 확인하려고 했는가?
- - C3: 결제가 이미 진행되었거나 곧 진행될 것이라며 긴급 대응을 요구했는가?
- - C4: 사용자의 명의가 도용되었거나 해킹되었음을 암시했는가?
- - C5: 결제 취소, 신고 접수, 수사기관 관련 조치를 제안했는가?
-4. 현금인출책 모집 보이스피싱 판단 기준
- - C1: 현금 전달 또는 인출을 요구했는가?
- - C2: 비정상적으로 높은 수익 또는 수당을 약속했는가?
- - C3: 민감한 계좌 정보나 비밀번호를 요구했는가?
- - C4: 사무실 출근이 아닌 유동적인 장소에서의 업무를 요구했는가?
- - C5: 법적으로 의심스러운 자금 이동(도박, 불법 거래 등)과 관련된 업무를 제안했는가?
-5. 대포통장 모집 보이스피싱 판단 기준
- - C1: 의심스러운 환전, 현금 이체, 또는 계좌 관리를 제안했는가?
- - C2: 비정상적인 고액 수익 또는 보상을 약속했는가?
- - C3: 민감한 개인정보(계좌 정보, 비밀번호 등)를 요구했는가?
- - C4: 본인 소유 계좌 또는 카드 사용을 요청했는가?
- - C5: 불법 행위 또는 금융권 관련 위험한 제안을 했는가?
+유의사항:
+- Chain of Thought: 판단 과정에서 통화 내용의 어떤 부분이 어떤 판단 기준에 해당하는지 구체적으로 서술하세요.
+- 통화 내역 유형: 가장 확률이 높은 보이스피싱 유형을 기재하세요
+- 보이스피싱 가능성: 최종 점수에 따라 높음 또는 낮음으로 표시하세요.
 ---
 출력 형식:
 1. 분석: 분석 이유를 여기에 서술합니다.
 2. 통화 내역 유형: 보이스피싱 유형을 여기에 명시합니다.
-3. 판단 기준별 점수:
- - C1: 점수
- - C2: 점수
- - C3: 점수
- - C4: 점수
- - C5: 점수
-4. 최종 점수: 총점
----
-유의사항:
-- Chain of Thought: 판단 과정에서 통화 내용의 어떤 부분이 어떤 판단 기준에 해당하는지 구체적으로 서술하세요.
-- 통화 내역 유형: 가장 높은 점수를 받은 보이스피싱 유형을 기재하세요. 만약 동일한 점수를 받은 유형이 여러 개일 경우, 모두 명시하세요.
-- 점수 부여: 각 판단 기준에 대해 0점, 1점, 2점 중 하나의 점수를 부여하세요.
-- 최종 점수 계산: 판단 기준별 점수를 모두 합산하여 최종 점수를 계산하세요.
-- 보이스피싱 가능성: 최종 점수에 따라 높음 또는 낮음으로 표시하세요.
----
-예시:
-통화 내용: 검찰입니다. 고객님이 연루된 사건이 있어 확인이 필요합니다. 안전한 계좌로 자금을 이동해 주시기 바랍니다.
-1. 분석: 수사기관 사칭형 보이스피싱으로 판단됩니다.
-2. 판단 기준별 점수 부여:
- - C1: 2점
- - C2: 2점
- - C3: 1점
- - C4: 2점
- - C5: 0점
-3. 최종 점수: 7점
+3. 최종 점수: 총점
 ---
 아래에 주어진 통화 데이터를 분석하여 위의 지침에 따라 판단하고, 결과를 지정된 형식으로 출력하세요.
 ---
@@ -324,36 +280,34 @@ class MainActivity : AppCompatActivity() {
                     """.trimIndent()
 
                     // 모든 모델을 동시에 호출
-                    val (chatGPTAnalysis, upstageAnalysis, claudeAnalysis, geminiAnalysis) = analyzeTextWithAllModels(prompt)
-                    Log.d("AnalysisResult", "GPT 분석 결과 : $chatGPTAnalysis")
-                    Log.d("AnalysisResult", "Upstage 분석 결과 : $upstageAnalysis")
-                    Log.d("AnalysisResult", "Claude 분석 결과 : $claudeAnalysis")
-                    Log.d("AnalysisResult", "Gemini 분석 결과 : $geminiAnalysis")
+                    val analyses = analyzeTextWithAllModels(prompt)
+                    Log.d("AnalysisResult", "GPT 분석 결과 : ${analyses[0]}")
+                    Log.d("AnalysisResult", "Upstage 분석 결과 : ${analyses[1]}")
+                    Log.d("AnalysisResult", "Claude 분석 결과 : ${analyses[2]}")
+                    Log.d("AnalysisResult", "Gemini 분석 결과 : ${analyses[3]}")
 
-                    // 점수 추출
-                    val gptScore = extractScoreFromAnalysis(chatGPTAnalysis)
-                    val upstageScore = extractScoreFromAnalysis(upstageAnalysis)
-                    val claudeScore = extractScoreFromAnalysis(claudeAnalysis)
-                    val geminiScore = extractScoreFromAnalysis(geminiAnalysis)
+                    // 점수 추출 및 null 값 필터링
+                    val scores = analyses.map { extractScoreFromAnalysis(it) }.filterNotNull()
 
-                    // 보이스피싱 유형 추출
-                    val gptCallType = extractCallType(chatGPTAnalysis)
-                    val upstageCallType = extractCallType(chatGPTAnalysis)
-                    val claudeCallType = extractCallType(chatGPTAnalysis)
-                    val geminiCallType = extractCallType(geminiAnalysis)
+                    // 평균 점수 계산 (성공한 API 개수로 나눔)
+                    val averageScore = if (scores.isNotEmpty()) {
+                        scores.sum().toDouble() / scores.size
+                    } else {
+                        0.0
+                    }
 
-                    val averageScore = (gptScore + upstageScore + claudeScore + geminiScore) / 4.0
+                    // 보이스피싱 유형 추출 (점수와 함께)
+                    val callTypeList = analyses.mapIndexed { index, analysis ->
+                        val score = extractScoreFromAnalysis(analysis)
+                        val callType = extractCallType(analysis)
+                        Pair(score, callType)
+                    }.filter { it.first != null }
 
                     // 가장 높은 점수를 가진 AI의 통화 유형 선택
-                    val highestScoringCallType = listOf(
-                        Pair(gptScore, gptCallType),
-                        Pair(upstageScore, upstageCallType),
-                        Pair(claudeScore, claudeCallType),
-                        Pair(geminiScore, geminiCallType)
-                    ).maxByOrNull { it.first }?.second ?: "알 수 없음"
+                    val highestScoringCallType = callTypeList.maxByOrNull { it.first!! }?.second ?: "알 수 없음"
 
                     withContext(Dispatchers.Main) {
-                        showAnalysisResult(chatGPTAnalysis, averageScore, highestScoringCallType)
+                        showAnalysisResult(analyses[0], averageScore, highestScoringCallType)
                     }
                 }
             }
@@ -361,7 +315,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 모든 모델을 동시에 호출하는 함수
-    private suspend fun analyzeTextWithAllModels(prompt: String): List<String> = coroutineScope {
+    private suspend fun analyzeTextWithAllModels(prompt: String): List<String?> = coroutineScope {
         val gptDeferred = async { analyzeTextWithChatGPT(prompt) }
         val upstageDeferred = async { analyzeTextWithUpstage(prompt) }
         val claudeDeferred = async { analyzeTextWithClaude(prompt) }
@@ -376,19 +330,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 분석 결과에서 점수 추출
-    private fun extractScoreFromAnalysis(analysis: String): Int {
+    private fun extractScoreFromAnalysis(analysis: String?): Int? {
+        if (analysis == null || analysis.isEmpty()) {
+            return null
+        }
         val regex = Regex(
             pattern = """(?:\d+\.\s*)?(?:\*\*)?(?:최종|총)\s*(?:점수|스코어)(?:\*\*)?\s*[:：]?\s*(\d+)\s*점?""",
             options = setOf(RegexOption.IGNORE_CASE)
         )
         val matchResult = regex.find(analysis)
-        val score = matchResult?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val score = matchResult?.groupValues?.get(1)?.toIntOrNull()
         Log.d("AnalysisResult", "추출된 점수: $score, 원본 텍스트: ${matchResult?.value}")
         return score
     }
 
     // 통화 내역 유형을 추출하는 메서드
-    private fun extractCallType(analysis: String): String {
+    private fun extractCallType(analysis: String?): String {
+        if (analysis == null || analysis.isEmpty()) {
+            return "알 수 없음"
+        }
         val regex = Regex(
             pattern = """(?:\d+\.\s*)?(?:\*\*)?(?:통화\s*(?:내역\s*)?유형)(?:\*\*)?\s*[:：]?\s*(.+)""",
             options = setOf(RegexOption.IGNORE_CASE)
@@ -398,11 +358,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 분석 결과를 보여주는 함수
-    private fun showAnalysisResult(gptAnalysis: String, averageScore: Double, callType: String) {
+    private fun showAnalysisResult(gptAnalysis: String?, averageScore: Double, callType: String) {
         alertDialog?.dismiss()
         Log.d("AnalysisResult", "평균 점수 : $averageScore")
 
-        // 평균 점수가 7 이상일 때만 경고창을 표시
+        // 평균 점수가 7.0 이상일 때만 경고창을 표시
         if (averageScore >= 7.0) {
             // 진동 실행
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -429,12 +389,12 @@ class MainActivity : AppCompatActivity() {
             ringtone.play()
 
             // 통화 내역 유형 추출
-            val callType = extractCallType(gptAnalysis)
+            val callTypeExtracted = callType
             val formattedMessage = Html.fromHtml(
                 "의심스러운 통화 발견!<br>" +
                         "이 통화는 보이스피싱일 가능성이 높습니다.<br><br>" +
                         "위험 점수: <font color='#FF0000'>${"%.2f".format(averageScore)}</font><br>" +
-                        "통화 내역 유형: <font color='#FF0000'>$callType</font>",
+                        "통화 내역 유형: <font color='#FF0000'>$callTypeExtracted</font>",
                 Html.FROM_HTML_MODE_LEGACY
             )
 
@@ -449,7 +409,7 @@ class MainActivity : AppCompatActivity() {
                 .setNeutralButton("자세히 보기") { dialog, _ ->
                     dialog.dismiss()
                     ringtone.stop() // 알람 소리 중지
-                    showDetailedAnalysis(gptAnalysis, averageScore, callType)
+                    showDetailedAnalysis(gptAnalysis ?: "분석 결과 없음", averageScore, callTypeExtracted)
                 }
                 .setCancelable(false)
                 .create()
@@ -537,7 +497,7 @@ class MainActivity : AppCompatActivity() {
 
 
     // ChatGPT API 통신 함수
-    private suspend fun analyzeTextWithChatGPT(text: String): String {
+    private suspend fun analyzeTextWithChatGPT(text: String): String? {
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS) // 타임아웃 설정
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -571,14 +531,16 @@ class MainActivity : AppCompatActivity() {
                         val errorJson = JSONObject(responseData ?: "")
                         val errorMessage = errorJson.optJSONObject("error")?.optString("message")
                             ?: "알 수 없는 오류가 발생했습니다."
-                        return@withContext "API 요청 실패: $errorMessage"
+                        Log.e("ChatGPT_Error", "API 요청 실패: $errorMessage")
+                        return@withContext null
                     }
 
                     val jsonResponse = JSONObject(responseData ?: "")
                     val choicesArray = jsonResponse.optJSONArray("choices")
 
                     if (choicesArray == null || choicesArray.length() == 0) {
-                        return@withContext "응답에 'choices' 필드가 없거나 비어 있습니다."
+                        Log.e("ChatGPT_Error", "응답에 'choices' 필드가 없거나 비어 있습니다.")
+                        return@withContext null
                     }
 
                     val messageContent = choicesArray.getJSONObject(0)
@@ -588,13 +550,14 @@ class MainActivity : AppCompatActivity() {
                     return@withContext messageContent
                 }
             } catch (e: Exception) {
-                return@withContext "오류가 발생했습니다: ${e.message}"
+                Log.e("ChatGPT_Error", "오류가 발생했습니다: ${e.message}")
+                return@withContext null
             }
         }
     }
 
     // Upstage API 통신 함수
-    private suspend fun analyzeTextWithUpstage(text: String): String {
+    private suspend fun analyzeTextWithUpstage(text: String): String? {
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS) // 타임아웃 설정
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -626,14 +589,16 @@ class MainActivity : AppCompatActivity() {
                         val errorJson = JSONObject(responseData ?: "")
                         val errorMessage = errorJson.optJSONObject("error")?.optString("message")
                             ?: "Upstage API 오류 발생"
-                        return@withContext "Upstage API 요청 실패: $errorMessage"
+                        Log.e("Upstage_Error", "Upstage API 요청 실패: $errorMessage")
+                        return@withContext null
                     }
 
                     val jsonResponse = JSONObject(responseData ?: "")
                     val choicesArray = jsonResponse.optJSONArray("choices")
 
                     if (choicesArray == null || choicesArray.length() == 0) {
-                        return@withContext "Upstage 응답이 비어 있습니다."
+                        Log.e("Upstage_Error", "Upstage 응답이 비어 있습니다.")
+                        return@withContext null
                     }
 
                     val messageContent = choicesArray.getJSONObject(0)
@@ -643,13 +608,14 @@ class MainActivity : AppCompatActivity() {
                     return@withContext messageContent
                 }
             } catch (e: Exception) {
-                return@withContext "Upstage 통신 오류: ${e.message}"
+                Log.e("Upstage_Error", "Upstage 통신 오류: ${e.message}")
+                return@withContext null
             }
         }
     }
 
     // Claude API 통신 함수
-    private suspend fun analyzeTextWithClaude(text: String): String {
+    private suspend fun analyzeTextWithClaude(text: String): String? {
         val client = OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
@@ -684,14 +650,16 @@ class MainActivity : AppCompatActivity() {
                     println("응답 데이터: $responseData")
 
                     if (responseData.isNullOrEmpty()) {
-                        return@withContext "응답 데이터가 비어 있습니다."
+                        Log.e("Claude_Error", "응답 데이터가 비어 있습니다.")
+                        return@withContext null
                     }
 
                     if (!response.isSuccessful) {
                         val errorJson = JSONObject(responseData ?: "")
                         val errorMessage = errorJson.optJSONObject("error")?.optString("message")
                             ?: "API 요청 실패"
-                        return@withContext "API 요청 실패: $errorMessage"
+                        Log.e("Claude_Error", "API 요청 실패: $errorMessage")
+                        return@withContext null
                     }
 
                     // 응답 데이터 파싱
@@ -713,13 +681,14 @@ class MainActivity : AppCompatActivity() {
                     return@withContext textContent.toString()
                 }
             } catch (e: Exception) {
-                return@withContext "오류 발생: ${e.message}"
+                Log.e("Claude_Error", "오류 발생: ${e.message}")
+                return@withContext null
             }
         }
     }
 
-    //gemini 통신 함수 추가
-    private suspend fun analyzeTextWithGemini(text: String): String {
+    // Gemini 통신 함수
+    private suspend fun analyzeTextWithGemini(text: String): String? {
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -753,14 +722,16 @@ class MainActivity : AppCompatActivity() {
                         val errorJson = JSONObject(responseData ?: "")
                         val errorMessage = errorJson.optJSONObject("error")?.optString("message")
                             ?: "알 수 없는 오류가 발생했습니다."
-                        return@withContext "Gemini API 요청 실패: $errorMessage"
+                        Log.e("Gemini_Error", "Gemini API 요청 실패: $errorMessage")
+                        return@withContext null
                     }
 
                     val jsonResponse = JSONObject(responseData ?: "")
                     val candidates = jsonResponse.optJSONArray("candidates")
 
                     if (candidates == null || candidates.length() == 0) {
-                        return@withContext "Gemini 응답에 'candidates' 필드가 없거나 비어 있습니다."
+                        Log.e("Gemini_Error", "Gemini 응답에 'candidates' 필드가 없거나 비어 있습니다.")
+                        return@withContext null
                     }
 
                     val content = candidates.getJSONObject(0)
@@ -772,7 +743,8 @@ class MainActivity : AppCompatActivity() {
                     return@withContext content
                 }
             } catch (e: Exception) {
-                return@withContext "Gemini 오류가 발생했습니다: ${e.message}"
+                Log.e("Gemini_Error", "Gemini 오류가 발생했습니다: ${e.message}")
+                return@withContext null
             }
         }
     }
@@ -783,7 +755,7 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults) // 추가된 부분
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         when (requestCode) {
             1 -> {
