@@ -1,0 +1,4 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#80FFFFFF"/> <!-- 50% 투명도 흰색 (#80은 50% alpha 값) -->
+    <corners android:radius="16dp"/> <!-- 둥근 모서리 -->
+</shape>

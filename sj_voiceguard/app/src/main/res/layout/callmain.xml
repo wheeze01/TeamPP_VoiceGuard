@@ -27,82 +27,72 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 전체 콘텐츠를 감싸는 LinearLayout -->
-    <LinearLayout
-        android:layout_width="match_parent"
+    <!-- 전화번호 텍스트 -->
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
+        android:layout_marginTop="50dp"
+        android:text="02-253-4871"
+        android:textSize="36sp"
+        android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/top_status_text"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- 안내 텍스트 영역을 화면 중간에 배치 -->
+    <LinearLayout
+        android:id="@+id/guide_text_container"
+        android:layout_width="360dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:background="@drawable/rounded_border"
+        android:padding="16dp"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/title"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/buttons_container"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"> <!-- 상단과 하단 간격 조정 -->
+        app:layout_constraintBottom_toTopOf="@id/buttons_container"
+        app:layout_constraintVertical_bias="0.5">
 
-        <!--        &lt;!&ndash; 로고 이미지 &ndash;&gt;-->
-        <!--        <ImageView-->
-        <!--            android:id="@+id/logo"-->
-        <!--            android:layout_width="130dp"-->
-        <!--            android:layout_height="130dp"-->
-        <!--            android:src="@drawable/voice_guard_logo" />-->
-
-        <!-- 타이틀 텍스트 -->
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="50dp"
-            android:layout_marginBottom="30dp"
-            android:text="02-253-4871"
-            android:textSize="30sp"
-            android:textStyle="bold" />
-
-        <!-- 안내 텍스트 영역 -->
+        <!-- 경고 아이콘과 텍스트 -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/rounded_border"
-            android:padding="16dp"
-            android:layout_margin="16dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp">
 
-            <!-- 경고 아이콘과 텍스트 -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+            <!-- 경고 아이콘 -->
+            <ImageView
+                android:id="@+id/warning_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/warning_icon" />
 
-                <!-- 경고 아이콘 -->
-                <ImageView
-                    android:id="@+id/warning_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/warning_icon" />
-
-                <!-- 안내 제목 텍스트 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="안내"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginStart="8dp"
-                    android:textColor="#000000" />
-            </LinearLayout>
-
-            <!-- 본문 텍스트 -->
+            <!-- 안내 제목 텍스트 -->
             <TextView
-                android:id="@+id/guide_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="통화버튼을 누르시면 녹음이 시작됩니다.\n녹음된 목소리를 실시간으로 분석해 보이스피싱 위험도를 보여줍니다.\n\n통화 거절 버튼을 누르시면 이전 화면으로 돌아갑니다."
-                android:textSize="14sp"
-                android:textColor="#000000"
-                android:layout_marginTop="8dp" />
+                android:text="안내"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_marginStart="8dp"
+                android:textColor="#000000" />
         </LinearLayout>
+
+        <!-- 본문 텍스트 -->
+        <TextView
+            android:id="@+id/guide_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="300dp"
+            android:text="통화버튼을 누르시면 녹음이 시작됩니다.\n녹음된 목소리를 실시간으로 분석해 보이스피싱 위험도를 보여줍니다.\n\n통화 거절 버튼을 누르시면 이전 화면으로 돌아갑니다."
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <!-- 통화 및 통화 종료 버튼이 들어가는 ConstraintLayout -->
@@ -115,7 +105,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="17dp"
         android:layout_marginTop="16dp"
-        android:padding="2dp"> <!-- 상단 마진 추가로 버튼을 위로 올림 -->
+        android:padding="2dp">
 
         <!-- 통화 받기 버튼 -->
         <ImageButton
@@ -130,7 +120,7 @@
             app:layout_constraintEnd_toStartOf="@+id/reject_call"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="32dp" />
+            android:layout_marginEnd="120dp" />
 
         <!-- 통화 종료 버튼 -->
         <ImageButton
@@ -146,4 +136,5 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

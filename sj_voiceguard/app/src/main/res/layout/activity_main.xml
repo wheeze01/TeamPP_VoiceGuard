@@ -23,37 +23,56 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="02-253-4871"
-        android:textSize="24sp"
+        android:textSize="30sp"
         android:textColor="@android:color/black"
+        android:fontFamily="sans-serif"
+        android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/timerTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="100dp"/>
+        android:layout_marginTop="16dp"/>
 
-    <ImageView
-        android:id="@+id/callOptionsImageView"
-        android:layout_width="0dp"
+    <!-- 흰색 반투명 배경 안에 아이콘과 통화 종료 버튼 배치 -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/iconBackgroundLayout"
+        android:layout_width="360dp"
         android:layout_height="wrap_content"
-        android:src="@drawable/call_options"
-        android:adjustViewBounds="true"
+        android:background="@drawable/rounded_transparent_background"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="100dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"/>
+        android:layout_marginBottom="30dp"
+        android:padding="16dp">
 
-    <ImageButton
-        android:id="@+id/recordButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@drawable/call_out"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="24dp"
-        android:contentDescription="통화 종료"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:scaleType="fitCenter" />
+        <!-- 아이콘들을 묶은 이미지 -->
+        <ImageView
+            android:id="@+id/callOptionsImageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/call_options"
+            android:adjustViewBounds="true"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="30dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
+
+        <!-- 통화 종료 버튼을 아이콘과 멀어지도록 설정 -->
+        <ImageButton
+            android:id="@+id/recordButton"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/call_out"
+            app:layout_constraintTop_toBottomOf="@id/callOptionsImageView"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="200dp"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="통화 종료"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
