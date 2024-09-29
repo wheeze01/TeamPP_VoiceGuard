@@ -10,6 +10,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.speech.RecognitionListener
@@ -37,6 +38,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import okhttp3.MediaType.Companion.toMediaType
 import java.util.concurrent.TimeUnit
+import java.util.logging.Handler
 
 class MainActivity : AppCompatActivity() {
 
@@ -46,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
     // UI 요소
     private lateinit var recordButton: ImageButton
-    private lateinit var speechResultText: TextView
+    //private lateinit var speechResultText: TextView
 
     // API 키 (실제 키로 교체하세요)
     private val chatGPTApiKey = "" // 실제 ChatGPT API 키로 교체하세요
@@ -67,12 +69,21 @@ class MainActivity : AppCompatActivity() {
     private var accumulatedText = "" // 누적된 텍스트
     private var currentPartialText = "" // 현재 부분 결과
 
+    //타이머 관련 변수
+    private lateinit var timerTextView: TextView
+    private var timerSeconds = 0
+    private var timerHandler: android.os.Handler = android.os.Handler(Looper.getMainLooper())
+    private lateinit var timerRunnable: Runnable
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+        timerTextView = findViewById(R.id.timerTextView)
+        initializeTimer()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -82,7 +93,7 @@ class MainActivity : AppCompatActivity() {
 
         // UI 요소 초기화
         recordButton = findViewById(R.id.recordButton)
-        speechResultText = findViewById(R.id.speechResultText)
+        //speechResultText = findViewById(R.id.speechResultText)
 
         // SpeechRecognizer 초기화
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
@@ -99,6 +110,22 @@ class MainActivity : AppCompatActivity() {
         // START_RECORDING 인텐트 확인
         if (intent.getBooleanExtra("START_RECORDING", false)) {
             startListening()
+        }
+    }
+
+    private fun initializeTimer() {
+        timerRunnable = object : Runnable {
+            override fun run() {
+                timerSeconds++
+                updateTimerDisplay()
+                timerHandler.postDelayed(this, 1000)
+            }
+
+            private fun updateTimerDisplay() {
+                val minutes = timerSeconds / 60
+                val seconds = timerSeconds % 60
+                timerTextView.text = String.format("%02d:%02d", minutes, seconds)
+            }
         }
     }
 
@@ -137,7 +164,7 @@ class MainActivity : AppCompatActivity() {
             )
         } else {
             isListening = true
-            speechResultText.text = "" // 이전 결과 초기화
+            //speechResultText.text = "" // 이전 결과 초기화
             recordButton.setImageResource(R.drawable.call_out) // 중지 이미지로 변경
 
             val recognizerIntent = getRecognizerIntent()
@@ -147,6 +174,19 @@ class MainActivity : AppCompatActivity() {
             // 실시간 분석 코루틴 시작
             startRealtimeAnalysis()
         }
+        isListening = true
+        recordButton.setImageResource(R.drawable.call_out)
+
+        // 타이머 시작
+        timerSeconds = 0
+        updateTimerDisplay()
+        timerHandler.post(timerRunnable)
+    }
+
+    private fun updateTimerDisplay() {
+        val minutes = timerSeconds / 60
+        val seconds = timerSeconds % 60
+        timerTextView.text = String.format("%02d:%02d", minutes, seconds)
     }
 
     // 음성 인식 중지 메서드
@@ -211,11 +251,11 @@ class MainActivity : AppCompatActivity() {
     // 부분 결과 처리 메서드
     private fun handlePartialResult(result: String) {
         runOnUiThread {
-            speechResultText.text = accumulatedText + " " + result
-            val scrollView: ScrollView = findViewById(R.id.scrollView)
-            scrollView.post {
-                scrollView.fullScroll(View.FOCUS_DOWN)
-            }
+            //speechResultText.text = accumulatedText + " " + result
+            //val scrollView: ScrollView = findViewById(R.id.scrollView)
+//            scrollView.post {
+//                scrollView.fullScroll(View.FOCUS_DOWN)
+//            }
         }
     }
 
@@ -223,13 +263,13 @@ class MainActivity : AppCompatActivity() {
     private fun handleFinalResult(result: String) {
         runOnUiThread {
             accumulatedText += if (accumulatedText.isEmpty()) result else " $result"
-            speechResultText.text = accumulatedText
+            //speechResultText.text = accumulatedText
             currentPartialText = ""
 
-            val scrollView: ScrollView = findViewById(R.id.scrollView)
-            scrollView.post {
-                scrollView.fullScroll(View.FOCUS_DOWN)
-            }
+            //val scrollView: ScrollView = findViewById(R.id.scrollView)
+//            scrollView.post {
+//                scrollView.fullScroll(View.FOCUS_DOWN)
+//            }
         }
     }
 
@@ -241,7 +281,7 @@ class MainActivity : AppCompatActivity() {
                 if (accumulatedText.isNotEmpty()) {
                     val textToAnalyze = accumulatedText
                     val prompt = """
-                    두 사람 간의 전화 통화 스크립트가 주어질거야. 이 통화 스크립트를 분석해서 이 대화가 보이스 피싱 대화일 가능성을 0에서 10사이의 정수로 대답해줘. Chain of Thought 방식을 사용하여 단계별로 판단합니다. 최종 결과는 지정된 형식으로 출력하세요.
+                    두 사람 간의 전화 통화 스크립트가 주어질거야. 이 통화 스크립트를 분석해서 이 대화가 보이스 피싱 대화일 가능성을 0에서 10사이의 정수로 판단해줘. Chain of Thought 방식을 사용하여 단계별로 판단합니다. 최종 결과는 지정된 형식으로 출력하세요.
 
 -- 보이스피싱 평가기준 --
 - 기존의 대출을 상환하면 새 대출의 한도가 올라가는 이유로 입금을 유도하는 내용
@@ -274,10 +314,12 @@ class MainActivity : AppCompatActivity() {
 2. 통화 내역 유형: 보이스피싱 유형을 여기에 명시합니다.
 3. 최종 점수: 총점
 ---
-아래에 주어진 통화 데이터를 분석하여 위의 지침에 따라 판단하고, 결과를 지정된 형식으로 출력하세요.
+아래에 주어진 통화 데이터를 분석하여 위의 지침에 따라 판단하고, 결과를 무조건 지정된 형식으로 출력하세요.
 ---
                     [$textToAnalyze]
                     """.trimIndent()
+
+                    Log.d("AnalysisResult", "생성된 프롬프트:\n$prompt")
 
                     // 모든 모델을 동시에 호출
                     val analyses = analyzeTextWithAllModels(prompt)
@@ -519,6 +561,7 @@ class MainActivity : AppCompatActivity() {
         val request: Request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $chatGPTApiKey")
+            .addHeader("Content-Type", "application/json") // 추가된 부분
             .post(body)
             .build()
 
@@ -526,6 +569,9 @@ class MainActivity : AppCompatActivity() {
             try {
                 client.newCall(request).execute().use { response ->
                     val responseData = response.body?.string()
+
+                    // 응답 데이터를 로그에 출력
+                    Log.d("AnalysisResult", "응답 데이터:\n$responseData")
 
                     if (!response.isSuccessful) {
                         val errorJson = JSONObject(responseData ?: "")
@@ -791,6 +837,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         speechRecognizer.destroy()
+        timerHandler.removeCallbacks(timerRunnable)
         scope.cancel()
         alertDialog?.dismiss()
         if (::ringtone.isInitialized && ringtone.isPlaying) {
